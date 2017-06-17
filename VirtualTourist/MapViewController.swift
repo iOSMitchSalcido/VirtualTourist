@@ -197,6 +197,14 @@ extension MapViewController: MKMapViewDelegate {
                 let controller = self.storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
                 controller.photoURLString = urlArray
                 
+                // set view title
+                if let locationTitle = view.annotation?.title {
+                    controller.title = locationTitle
+                }
+                else {
+                    controller.title = "Location"
+                }
+                
                 DispatchQueue.main.async {
                     self.navigationController?.pushViewController(controller, animated: true)
                 }
