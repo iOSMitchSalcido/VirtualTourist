@@ -27,9 +27,9 @@ extension UIViewController {
                                       preferredStyle: .alert)
         
         let proceedAction = UIAlertAction(title: "Proceed", style: .destructive, handler: completion)
-        let cancelAction = UIAlertAction(title: "Cancel", style: .default)
-        alert.addAction(proceedAction)
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
         alert.addAction(cancelAction)
+        alert.addAction(proceedAction)
         present(alert, animated: true)
     }
     
@@ -63,9 +63,15 @@ extension UIViewController {
         case .locationError(let value):
             alertTitle = "Location Error"
             alertMessage = value
-        default:
-            alertTitle = "Unknown Error"
-            alertMessage = "Unable to determine source of error"
+        case .generalError(let value):
+            alertTitle = "General Error"
+            alertMessage = value
+        case .networkError(let value):
+            alertTitle = "Network Error"
+            alertMessage = value
+        case .operatorError(let value):
+            alertTitle = "Operator Error"
+            alertMessage = value
         }
         
         let alert = UIAlertController(title: alertTitle, message: alertMessage, preferredStyle: .alert)

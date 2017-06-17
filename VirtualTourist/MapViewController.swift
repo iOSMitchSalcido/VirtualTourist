@@ -26,6 +26,8 @@ class MapViewController: UIViewController {
         /*
          Handle long press GR. This function handles the detection of a long press. The touch point is identified
          in the mapView into a coord. This coord is then used to geocode a placemark for location identification.
+         
+         Upon successful reverse geocoding of touchpoint, an annot is added to mapView.
         */
         
         switch sender.state {
@@ -49,8 +51,12 @@ class MapViewController: UIViewController {
                     switch error {
                     case .locationUnknown:
                         self.presentAlertForError(VTError.locationError("Unknown location"))
+                    case .network:
+                        self.presentAlertForError(VTError.locationError("Network unavailable"))
+                    case .geocodeFoundNoResult:
+                        self.presentAlertForError(VTError.locationError("Geocode yielded no result"))
                     default:
-                        self.presentAlertForError(VTError.locationError("Geocoding error"))
+                        self.presentAlertForError(VTError.locationError("Unknown geocoding error"))
                     }
                     return
                 }
@@ -88,8 +94,22 @@ class MapViewController: UIViewController {
             break
         }
     }
+    
+    // segue prep
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        
+        guard segue.identifier == "PCVCSegueID",
+            let annotationView = sender as? MKAnnotationView,
+            let annot = annotationView.annotation else {
+                return
+        }
+        
+        let controller = segue.destination as! PhotosCollectionViewController
+        controller.title = annot.title!
+    }
 }
 
+// mapView delegate functions
 extension MapViewController: MKMapViewDelegate {
     
     // annotationView
@@ -101,24 +121,35 @@ extension MapViewController: MKMapViewDelegate {
         
         // create view if nil
         if pinView == nil {
+            
+            // create and config pinView
             pinView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reuseId)
             pinView!.canShowCallout = true
             pinView!.pinTintColor = .green
-            pinView!.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
-            let leftCalloutAccessoryView = UIButton(type: .roundedRect)
-            leftCalloutAccessoryView.frame = CGRect(x: 0.0, y: 0.0, width: 55.0, height: 35.0)
-            leftCalloutAccessoryView.setTitle("Delete", for: .normal)
+            pinView?.animatesDrop = true
+
+            // add right callout..used to prompt user to Flicks CVC
+            let rightCalloutAccessoryView = UIButton(type: .custom)
+            rightCalloutAccessoryView.frame = CGRect(x: 0.0, y: 0.0, width: 33.0, height: 33.0)
+            let rightImage = UIImage(named: "RightCalloutAccessoryImage")
+            rightCalloutAccessoryView.setImage(rightImage, for: .normal)
+            pinView?.rightCalloutAccessoryView = rightCalloutAccessoryView
+            
+            // add left callout...used to prompt user to delete pin
+            let leftCalloutAccessoryView = UIButton(type: .custom)
+            leftCalloutAccessoryView.frame = CGRect(x: 0.0, y: 0.0, width: 22.0, height: 22.0)
+            let leftImage = UIImage(named: "LeftCalloutAccessoryImage")
+            leftCalloutAccessoryView.setImage(leftImage, for: .normal)
             pinView?.leftCalloutAccessoryView = leftCalloutAccessoryView
         }
         else {
             pinView!.annotation = annotation
         }
         
-        pinView?.animatesDrop = true
-        
         return pinView
     }
     
+    // accessory tap
     func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
         
         if control == view.leftCalloutAccessoryView {
@@ -134,6 +165,42 @@ extension MapViewController: MKMapViewDelegate {
             }
         }
         else if control == view.rightCalloutAccessoryView {
+
+            //performSegue(withIdentifier: "PCVCSegueID", sender: view)
+            let lon = Double((view.annotation?.coordinate.longitude)!)
+            let lat = Double((view.annotation?.coordinate.latitude)!)
+            let radius = Double(10.0)
+            
+            let flickr = FlickrAPI()
+            flickr.flickSearchforText(nil, geo: (lon, lat, radius)) {
+                (data, error) in
+                
+                guard error == nil else {
+                    print("error during flickr")
+                    return
+                }
+                
+                guard let data = data,
+                    let photos = data["photos"] as? [String:AnyObject],
+                    let photoArray = photos["photo"] as? [[String:AnyObject]] else {
+                        print("bad data returned")
+                        return
+                }
+                
+                var urlArray = [String]()
+                for photo in photoArray {
+                    if let urlString = photo["url_m"] as? String {
+                        urlArray.append(urlString)
+                    }
+                }
+                
+                let controller = self.storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
+                controller.photoURLString = urlArray
+                
+                DispatchQueue.main.async {
+                    self.navigationController?.pushViewController(controller, animated: true)
+                }
+            }
         }
     }
 }

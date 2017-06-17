@@ -42,6 +42,7 @@
                     <navigationItem key="navigationItem" id="ics-wB-Kvs"/>
                     <connections>
                         <outlet property="mapView" destination="Plf-wC-E2S" id="5uO-Y3-swp"/>
+                        <segue destination="5A2-3b-qkH" kind="show" identifier="PCVCSegueID" id="C8S-1i-dYT"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
@@ -52,6 +53,63 @@
                 </pongPressGestureRecognizer>
             </objects>
             <point key="canvasLocation" x="1076" y="138.98050974512745"/>
+        </scene>
+        <!--Photos Collection View Controller-->
+        <scene sceneID="93w-cB-Qk8">
+            <objects>
+                <collectionViewController storyboardIdentifier="PhotosCollectionViewControllerID" id="5A2-3b-qkH" customClass="PhotosCollectionViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
+                    <collectionView key="view" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" id="Ygw-gb-mxk">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="10" minimumInteritemSpacing="10" id="9d2-8l-Stc">
+                            <size key="itemSize" width="50" height="50"/>
+                            <size key="headerReferenceSize" width="0.0" height="0.0"/>
+                            <size key="footerReferenceSize" width="0.0" height="0.0"/>
+                            <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
+                        </collectionViewFlowLayout>
+                        <cells>
+                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="PhotosCVCellID" id="YZK-Ig-rbm" customClass="PhotoCVCell" customModule="VirtualTourist" customModuleProvider="target">
+                                <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
+                                    <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <subviews>
+                                        <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="DefaultCVCellImage" translatesAutoresizingMaskIntoConstraints="NO" id="Yr7-xr-X6g">
+                                            <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+                                        </imageView>
+                                        <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="white" translatesAutoresizingMaskIntoConstraints="NO" id="aR8-xX-7w2">
+                                            <rect key="frame" x="15" y="15" width="20" height="20"/>
+                                        </activityIndicatorView>
+                                    </subviews>
+                                </view>
+                                <constraints>
+                                    <constraint firstItem="Yr7-xr-X6g" firstAttribute="top" secondItem="YZK-Ig-rbm" secondAttribute="top" id="Bhq-th-IzJ"/>
+                                    <constraint firstItem="aR8-xX-7w2" firstAttribute="centerX" secondItem="YZK-Ig-rbm" secondAttribute="centerX" id="X6z-BY-oNa"/>
+                                    <constraint firstAttribute="trailing" secondItem="Yr7-xr-X6g" secondAttribute="trailing" id="acK-b4-QCg"/>
+                                    <constraint firstItem="Yr7-xr-X6g" firstAttribute="leading" secondItem="YZK-Ig-rbm" secondAttribute="leading" id="dxo-JD-mda"/>
+                                    <constraint firstItem="aR8-xX-7w2" firstAttribute="centerY" secondItem="YZK-Ig-rbm" secondAttribute="centerY" id="gyZ-h8-2wt"/>
+                                    <constraint firstAttribute="bottom" secondItem="Yr7-xr-X6g" secondAttribute="bottom" id="mRn-c7-WYc"/>
+                                </constraints>
+                                <connections>
+                                    <outlet property="activityIndicator" destination="aR8-xX-7w2" id="frf-sa-Iqp"/>
+                                    <outlet property="imageView" destination="Yr7-xr-X6g" id="ygY-GF-MdS"/>
+                                </connections>
+                            </collectionViewCell>
+                        </cells>
+                        <connections>
+                            <outlet property="dataSource" destination="5A2-3b-qkH" id="pPc-IH-Bis"/>
+                            <outlet property="delegate" destination="5A2-3b-qkH" id="bUn-FC-k4G"/>
+                        </connections>
+                    </collectionView>
+                    <connections>
+                        <outlet property="flowLayout" destination="9d2-8l-Stc" id="gUr-oH-LDk"/>
+                    </connections>
+                </collectionViewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="skL-fD-KcC" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1942" y="139"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="9Xv-oO-hHb">
@@ -72,4 +130,7 @@
             <point key="canvasLocation" x="150" y="139"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="DefaultCVCellImage" width="100" height="100"/>
+    </resources>
 </document>
