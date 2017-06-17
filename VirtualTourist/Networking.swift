@@ -73,7 +73,7 @@ struct Networking {
         task.resume()
     }
     
-    // perform a data task, operates on a Data object (image)
+    // perform a data task, operates on a Data object (such as image data returned from Flickr)
     func dataTaskForURL(_ url: URL, completion: @escaping (Data?, VTError?) -> Void) {
         
         // create request

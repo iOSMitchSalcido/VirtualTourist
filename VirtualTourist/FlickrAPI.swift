@@ -54,23 +54,12 @@ struct FlickrAPI {
         let networking = Networking()
         networking.dataTaskForParameters(params as [String : AnyObject], completion: completion)
     }
-    
-    func imageForUrl(_ url: URL, completion: @escaping ([String: AnyObject]?, VTError?) -> Void) {
-        
-        let request = URLRequest(url: url)
-        let task = URLSession.shared.dataTask(with: request) {
-            (data, response, error) in
-            
-        }
-        
-        task.resume()
-    }
 }
 
 // constants
 extension FlickrAPI {
     
-    struct Keys {
+    fileprivate struct Keys {
         
         // base params
         static let apiKey = "api_key"
@@ -88,7 +77,7 @@ extension FlickrAPI {
         static let radius = "radius"
     }
     
-    struct Values {
+    fileprivate struct Values {
         
         // base params
         static let apiKey = "3bc85d1817c25bfd73b8a05ff26a01c3"
@@ -107,23 +96,7 @@ extension FlickrAPI {
         static let path = "/services/rest"
         static let scheme = "https"
     }
-    /*
-     // constants
-     fileprivate let API_Scheme = "https"
-     fileprivate let API_Host = "api.flickr.com"
-     fileprivate let API_Path = "/services/rest"
-     
-     // base params for all searches used in this app
-     private var baseParams = ["method": "flickr.photos.search",
-     "api_key": "3bc85d1817c25bfd73b8a05ff26a01c3",
-     "format": "json",
-     "extras": "url_m",
-     "nojsoncallback": "1",
-     "safe_search": "1"]
-     
-     
-     https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=25965326e41f50a0dcda21c9b1c4c917&text=dogs&extras=url_m&format=json&nojsoncallback=1&api_sig=628d275cc6d435ee9ca1ede2e1799c6f
- */
+
     // methods
     fileprivate struct Methods {
         static let photosSearch = "flickr.photos.search"
