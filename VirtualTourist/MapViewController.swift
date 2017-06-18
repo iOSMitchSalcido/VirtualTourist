@@ -11,13 +11,59 @@
 
 import UIKit
 import MapKit
+import CoreData
 
 class MapViewController: UIViewController {
 
     @IBOutlet weak var mapView: MKMapView!      // ref to mapView
     
+    // context
+    var context: NSManagedObjectContext!
+    
+    // core data stack
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // retrieve context
+        context = CoreDataStack("VirtualTouristModel").context
+        
+        /*
+         do a fetch to populate map with pins. Create a fetch request and an empty annotations array.
+         Iterate through fetch results using attribs to populate properties in MKPoint annotation.
+         This annotation is then added to the annotations array, which is then added to the
+         mapView annotations
+        */
+        
+        // array to hold annotations
+        var annotations = [MKPointAnnotation]()
+
+        // fetch request
+        let request: NSFetchRequest<Pin> = Pin.fetchRequest()
+        do {
+            // perform fetch
+            let results = try context.fetch(request)
+            
+            // iterate through results
+            for pin in results {
+                
+                // test coordinate
+                if let lat = pin.coordinate?.latitude,
+                    let lon = pin.coordinate?.longitude {
+                    
+                    // create annotation and append to annotations
+                    let annot = MKPointAnnotation()
+                    annot.title = pin.title
+                    annot.coordinate = CLLocationCoordinate2D(latitude: lat,
+                                                              longitude: lon)
+                    annotations.append(annot)
+                }
+            }
+        } catch {
+            print("unable to fetch Pins")
+        }
+        
+        // add annotations to mapView
+        mapView.addAnnotations(annotations)
     }
     
     // long press GR
@@ -89,6 +135,26 @@ class MapViewController: UIViewController {
                 annot.coordinate = coord
                 annot.title = locationTitle
                 self.mapView.addAnnotation(annot)
+                
+                // add to context
+                
+                // coordinate
+                let newCoord = Coordinate(context: self.context)
+                newCoord.latitude = Double(coord.latitude)
+                newCoord.longitude = Double(coord.longitude)
+                
+                // Pin
+                let newPin = Pin(context: self.context)
+                newPin.coordinate = newCoord
+                newPin.title = locationTitle
+                
+                // save
+                do {
+                    try self.context.save()
+                    print("good save")
+                } catch {
+                    print("unable to save context")
+                }
             }
         default:
             break
@@ -166,7 +232,6 @@ extension MapViewController: MKMapViewDelegate {
         }
         else if control == view.rightCalloutAccessoryView {
 
-            //performSegue(withIdentifier: "PCVCSegueID", sender: view)
             let lon = Double((view.annotation?.coordinate.longitude)!)
             let lat = Double((view.annotation?.coordinate.latitude)!)
             let radius = Double(10.0)
