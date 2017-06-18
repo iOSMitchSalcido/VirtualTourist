@@ -15,10 +15,11 @@ import CoreData
 
 class MapViewController: UIViewController {
 
-    @IBOutlet weak var mapView: MKMapView!      // ref to mapView
+    @IBOutlet weak var mapView: MKMapView!  // ref to mapView
     
-    // context
-    var context: NSManagedObjectContext!
+    var context: NSManagedObjectContext!    // ref to managedObjectContext
+    
+    let SEARCH_RADIUS: Double = 10.0    // default search radius
     
     // core data stack
     override func viewDidLoad() {
@@ -35,7 +36,7 @@ class MapViewController: UIViewController {
         */
         
         // array to hold annotations
-        var annotations = [MKPointAnnotation]()
+        var annotations = [VTAnnotation]()
 
         // fetch request
         let request: NSFetchRequest<Pin> = Pin.fetchRequest()
@@ -51,10 +52,11 @@ class MapViewController: UIViewController {
                     let lon = pin.coordinate?.longitude {
                     
                     // create annotation and append to annotations
-                    let annot = MKPointAnnotation()
+                    let coord = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+                    let annot = VTAnnotation()
+                    annot.coordinate = coord
                     annot.title = pin.title
-                    annot.coordinate = CLLocationCoordinate2D(latitude: lat,
-                                                              longitude: lon)
+                    annot.pin = pin
                     annotations.append(annot)
                 }
             }
@@ -130,12 +132,6 @@ class MapViewController: UIViewController {
                     locationTitle = ocean
                 }
                 
-                // create/config annot, add to mapView
-                let annot = MKPointAnnotation()
-                annot.coordinate = coord
-                annot.title = locationTitle
-                self.mapView.addAnnotation(annot)
-                
                 // add to context
                 
                 // coordinate
@@ -149,29 +145,18 @@ class MapViewController: UIViewController {
                 newPin.title = locationTitle
                 
                 // save
-                do {
-                    try self.context.save()
-                    print("good save")
-                } catch {
-                    print("unable to save context")
-                }
+                self.saveContext()
+                
+                // create/config annot, add to mapView
+                let annot = VTAnnotation()
+                annot.coordinate = coord
+                annot.title = locationTitle
+                annot.pin = newPin
+                self.mapView.addAnnotation(annot)
             }
         default:
             break
         }
-    }
-    
-    // segue prep
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        
-        guard segue.identifier == "PCVCSegueID",
-            let annotationView = sender as? MKAnnotationView,
-            let annot = annotationView.annotation else {
-                return
-        }
-        
-        let controller = segue.destination as! PhotosCollectionViewController
-        controller.title = annot.title!
     }
 }
 
@@ -193,7 +178,8 @@ extension MapViewController: MKMapViewDelegate {
             pinView!.canShowCallout = true
             pinView!.pinTintColor = .green
             pinView?.animatesDrop = true
-
+            pinView?.isDraggable = true
+            
             // add right callout..used to prompt user to Flicks CVC
             let rightCalloutAccessoryView = UIButton(type: .custom)
             rightCalloutAccessoryView.frame = CGRect(x: 0.0, y: 0.0, width: 33.0, height: 33.0)
@@ -218,62 +204,105 @@ extension MapViewController: MKMapViewDelegate {
     // accessory tap
     func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
         
+        // test for annotation and Pin
+        guard let annotation = view.annotation as? VTAnnotation,
+            let pin = annotation.pin else {
+                return
+        }
+        
+        // left accessory. Delete Pin and Flick album
         if control == view.leftCalloutAccessoryView {
             
             // create an proceed/cancel alert to handle deleting location
             presentProceedCancelAlert(title: "Delete Location ?", message: "Delete location and Flick's") {
                 (action) in
                 
-                guard let annotation = view.annotation else {
-                    return
-                }
+                // remove pin from map
                 mapView.removeAnnotation(annotation)
+                
+                // delete Pin from context, save
+                self.context.delete(pin)
+                self.saveContext()
             }
         }
+        // right accessory.
         else if control == view.rightCalloutAccessoryView {
-
-            let lon = Double((view.annotation?.coordinate.longitude)!)
-            let lat = Double((view.annotation?.coordinate.latitude)!)
-            let radius = Double(10.0)
             
-            let flickr = FlickrAPI()
-            flickr.flickSearchforText(nil, geo: (lon, lat, radius)) {
-                (data, error) in
-                
-                guard error == nil else {
-                    print("error during flickr")
-                    return
-                }
-                
-                guard let data = data,
-                    let photos = data["photos"] as? [String:AnyObject],
-                    let photoArray = photos["photo"] as? [[String:AnyObject]] else {
-                        print("bad data returned")
-                        return
-                }
-                
-                var urlArray = [String]()
-                for photo in photoArray {
-                    if let urlString = photo["url_m"] as? String {
-                        urlArray.append(urlString)
+            if let count = pin.flicks?.count, count > 0 {
+        
+                var urlStringArray = [String]()
+                for obj in pin.flicks! {
+                    let flick = obj as! Flick
+                    if let urlString = flick.urlString {
+                        urlStringArray.append(urlString)
+                    }
+                    
+                    if flick.image == nil {
+                        print("nil image")
+                    }
+                    else {
+                        print("non-nil image")
                     }
                 }
                 
-                let controller = self.storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
-                controller.photoURLString = urlArray
+                let controller = storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
+                controller.photoURLString = urlStringArray
+                controller.title = pin.title
+                navigationController?.pushViewController(controller, animated: true)
+            }
+            else {
                 
-                // set view title
-                if let locationTitle = view.annotation?.title {
-                    controller.title = locationTitle
-                }
-                else {
-                    controller.title = "Location"
-                }
+                let lon = Double(annotation.coordinate.longitude)
+                let lat = Double(annotation.coordinate.latitude)
+                let radius = SEARCH_RADIUS
+                let geo = (lon, lat, radius)
                 
-                DispatchQueue.main.async {
-                    self.navigationController?.pushViewController(controller, animated: true)
+                let flickr = FlickrAPI()
+                flickr.flickSearchforText(nil, geo: geo) {
+                    (data, error) in
+                    
+                    guard let data = data else {
+                        return
+                    }
+                    
+                    guard let photosDict = data["photos"] as? [String: AnyObject],
+                        let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
+                            return
+                    }
+                    
+                    var urlStringArray = [String]()
+                    for dict in photosArray {
+                        if let urlString = dict["url_m"] as? String {
+                            urlStringArray.append(urlString)
+                        }
+                    }
+                    
+                    DispatchQueue.main.async {
+                        for string in urlStringArray {
+                            let flick = Flick(context: self.context)
+                            flick.urlString = string
+                            pin.addToFlicks(flick)
+                        }
+                        self.saveContext()
+                        
+                        let controller = self.storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
+                        controller.photoURLString = urlStringArray
+                        controller.title = pin.title
+                        self.navigationController?.pushViewController(controller, animated: true)
+                    }
                 }
             }
+        }
+    }
+}
+
+extension MapViewController {
+    
+    func saveContext() {
+        do {
+            try context.save()
+        } catch {
+            print("unable to save context")
         }
     }
 }
