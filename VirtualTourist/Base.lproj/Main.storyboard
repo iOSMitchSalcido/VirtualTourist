@@ -42,7 +42,6 @@
                     <navigationItem key="navigationItem" id="ics-wB-Kvs"/>
                     <connections>
                         <outlet property="mapView" destination="Plf-wC-E2S" id="5uO-Y3-swp"/>
-                        <segue destination="5A2-3b-qkH" kind="show" identifier="PCVCSegueID" id="C8S-1i-dYT"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>

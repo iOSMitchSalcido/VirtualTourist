@@ -247,7 +247,8 @@ extension MapViewController: MKMapViewDelegate {
                 
                 let controller = storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
                 controller.photoURLString = urlStringArray
-                controller.title = pin.title
+                controller.pin = pin
+                controller.context = context
                 navigationController?.pushViewController(controller, animated: true)
             }
             else {
@@ -287,7 +288,8 @@ extension MapViewController: MKMapViewDelegate {
                         
                         let controller = self.storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
                         controller.photoURLString = urlStringArray
-                        controller.title = pin.title
+                        controller.pin = pin
+                        controller.context = self.context
                         self.navigationController?.pushViewController(controller, animated: true)
                     }
                 }

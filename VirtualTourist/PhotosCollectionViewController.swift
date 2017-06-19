@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 
 class PhotosCollectionViewController: UICollectionViewController {
 
@@ -19,12 +20,20 @@ class PhotosCollectionViewController: UICollectionViewController {
     var photoURLString = [String]()
     var imageCache = [String: UIImage]()
     
+    var context: NSManagedObjectContext!
+    var pin: Pin!
+    
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
+    
+    var frc: NSFetchedResultsController<Pin>!
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        title = pin.title
     }
     
+    // handle collectionView layout
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         
@@ -50,46 +59,53 @@ extension PhotosCollectionViewController {
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return photoURLString.count
+        
+        guard let count = pin.flicks?.count else  {
+            return 0
+        }
+        
+        return count
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotosCVCellID", for: indexPath) as! PhotoCVCell
+        
+        guard let flick = pin.flicks?.object(at: indexPath.row) as? Flick else {
+            return cell
+        }
         
         // Configure the cell
         cell.imageView.image = UIImage(named: "DefaultCVCellImage")
         cell.activityIndicator.isHidden = false
         cell.activityIndicator.startAnimating()
         
-        let urlString = photoURLString[indexPath.row]
-        if let image = imageCache[urlString] {
+        if let image = flick.image as? UIImage {
+            
             cell.activityIndicator.isHidden = true
             cell.activityIndicator.stopAnimating()
             cell.imageView.image = image
         }
-        else {
+        else if let urlString = flick.urlString,
+            let url = URL(string: urlString) {
             
             cell.activityIndicator.isHidden = false
             cell.activityIndicator.startAnimating()
             
-            if let url = URL(string: urlString) {
+            let networking = Networking()
+            networking.dataTaskForURL(url) {
+                (data, error) in
                 
-                let networking = Networking()
-                networking.dataTaskForURL(url) {
-                    (data, error) in
-                    
-                    guard let imageData = data else {
-                        return
-                    }
-                    
-                    let image = UIImage(data: imageData)
-                    self.imageCache[urlString] = image
-                    
-                    DispatchQueue.main.async {
-                        cell.imageView.image = image
-                        cell.activityIndicator.stopAnimating()
-                        cell.activityIndicator.isHidden = true
-                    }
+                guard let imageData = data else {
+                    return
+                }
+                
+                let image = UIImage(data: imageData)
+                
+                DispatchQueue.main.async {
+                    cell.imageView.image = image
+                    cell.activityIndicator.stopAnimating()
+                    cell.activityIndicator.isHidden = true
+                    flick.image = image
                 }
             }
         }
