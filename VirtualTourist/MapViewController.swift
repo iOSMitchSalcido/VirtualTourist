@@ -283,9 +283,8 @@ extension MapViewController: MKMapViewDelegate {
                             let flick = Flick(context: self.context)
                             flick.urlString = string
                             pin.addToFlicks(flick)
+                            self.saveContext()
                         }
-                        self.saveContext()
-                        
                         let controller = self.storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
                         controller.photoURLString = urlStringArray
                         controller.pin = pin
