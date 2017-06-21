@@ -16,12 +16,10 @@ class PhotosCollectionViewController: UICollectionViewController {
     
     // constant for number of cells in a row
     let CELLS_PER_ROW: CGFloat = 4.0
-    
-    var photoURLString = [String]()
-    var imageCache = [String: UIImage]()
-    
+
+    var stack: CoreDataStack!
     var context: NSManagedObjectContext!
-    var pin: Pin!
+    var pin: Pin?
     
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
@@ -30,7 +28,20 @@ class PhotosCollectionViewController: UICollectionViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        title = pin.title
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(privateContextNotification(_:)),
+                                               name: NSNotification.Name.NSManagedObjectContextDidSave,
+                                               object: nil)
+        title = pin?.title
+    }
+    
+    func privateContextNotification(_ notification: Notification) {
+        
+        NotificationCenter.default.removeObserver(self)
+        DispatchQueue.main.async {
+            print("PhotosCollectionViewController - privateContext")
+            self.collectionView?.reloadData()
+        }
     }
     
     // handle collectionView layout
@@ -60,7 +71,7 @@ extension PhotosCollectionViewController {
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
-        guard let count = pin.flicks?.count else  {
+        guard let count = pin?.flicks?.count else  {
             return 0
         }
         
@@ -70,7 +81,7 @@ extension PhotosCollectionViewController {
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotosCVCellID", for: indexPath) as! PhotoCVCell
         
-        guard let flick = pin.flicks?.object(at: indexPath.row) as? Flick else {
+        guard let flick = pin?.flicks?.object(at: indexPath.row) as? Flick else {
             return cell
         }
         
@@ -105,7 +116,18 @@ extension PhotosCollectionViewController {
                     cell.imageView.image = image
                     cell.activityIndicator.stopAnimating()
                     cell.activityIndicator.isHidden = true
-                    flick.image = image
+                }
+                
+                self.stack.container.performBackgroundTask() { (privateContext) in
+                    
+                    let privateFlick = privateContext.object(with: flick.objectID) as! Flick
+                    privateFlick.image = image
+                    
+                    do {
+                        try privateContext.save()
+                    } catch {
+                        print("unable to save private context")
+                    }
                 }
             }
         }

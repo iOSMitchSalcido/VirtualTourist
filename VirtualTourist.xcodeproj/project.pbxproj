@@ -134,6 +134,7 @@
 			isa = PBXGroup;
 			children = (
 				860659271EF1680100990C05 /* AppDelegate.swift */,
+				8615B2071EF5D43000771F31 /* CoreDataStack.swift */,
 				86E607B61EF40AB200F79798 /* Networking.swift */,
 				86F9B6D51EF4D6250003EA30 /* FlickrAPI.swift */,
 				860659291EF1680100990C05 /* MapViewController.swift */,
@@ -144,7 +145,6 @@
 				860659331EF1680100990C05 /* Info.plist */,
 				86DBB9131EF2158900495478 /* ViewController+Extensions.swift */,
 				8615B2051EF5B63A00771F31 /* PhotoCVCell.swift */,
-				8615B2071EF5D43000771F31 /* CoreDataStack.swift */,
 				8615B2091EF5D4C600771F31 /* VirtualTouristModel.xcdatamodeld */,
 				8615B2181EF5FE1000771F31 /* VTAnnotation.swift */,
 				861F21521EF6B5B00091E5B7 /* ImageTransformer.swift */,

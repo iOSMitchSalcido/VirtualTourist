@@ -17,6 +17,7 @@ class MapViewController: UIViewController {
 
     @IBOutlet weak var mapView: MKMapView!  // ref to mapView
     
+    var stack: CoreDataStack!
     var context: NSManagedObjectContext!    // ref to managedObjectContext
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
@@ -25,9 +26,16 @@ class MapViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // retrieve context
-        context = CoreDataStack("VirtualTouristModel").context
+        // retrieve stack/context
+        stack = CoreDataStack("VirtualTouristModel")
+        context = stack.context
         
+        if context.automaticallyMergesChangesFromParent == true {
+            print("automaticallyMerges = true")
+        }
+        else {
+            print("automaticallyMerges = false")
+        }
         /*
          do a fetch to populate map with pins. Create a fetch request and an empty annotations array.
          Iterate through fetch results using attribs to populate properties in MKPoint annotation.
@@ -132,27 +140,34 @@ class MapViewController: UIViewController {
                     locationTitle = ocean
                 }
                 
-                // add to context
-                
-                // coordinate
-                let newCoord = Coordinate(context: self.context)
-                newCoord.latitude = Double(coord.latitude)
-                newCoord.longitude = Double(coord.longitude)
-                
-                // Pin
-                let newPin = Pin(context: self.context)
-                newPin.coordinate = newCoord
-                newPin.title = locationTitle
-                
-                // save
-                self.saveContext()
-                
-                // create/config annot, add to mapView
-                let annot = VTAnnotation()
-                annot.coordinate = coord
-                annot.title = locationTitle
-                annot.pin = newPin
-                self.mapView.addAnnotation(annot)
+                self.stack.container.performBackgroundTask() { (privateContext) in
+                    
+                    // coordinate
+                    let newCoord = Coordinate(context: privateContext)
+                    newCoord.latitude = Double(coord.latitude)
+                    newCoord.longitude = Double(coord.longitude)
+                    
+                    // Pin
+                    let newPin = Pin(context: privateContext)
+                    newPin.coordinate = newCoord
+                    newPin.title = locationTitle
+                    
+                    do {
+                        try privateContext.save()
+                        
+                        // create/config annot, add to mapView
+                        let annot = VTAnnotation()
+                        annot.coordinate = coord
+                        annot.title = locationTitle
+                        annot.pin = (self.context.object(with: newPin.objectID) as! Pin)
+                        
+                        DispatchQueue.main.async {
+                            self.mapView.addAnnotation(annot)
+                        }
+                    } catch {
+                        print("error saving private context")
+                    }
+                }
             }
         default:
             break
@@ -220,44 +235,35 @@ extension MapViewController: MKMapViewDelegate {
                 // remove pin from map
                 mapView.removeAnnotation(annotation)
                 
-                // delete Pin from context, save
-                self.context.delete(pin)
-                self.saveContext()
-            }
-        }
-        // right accessory.
-        else if control == view.rightCalloutAccessoryView {
-            
-            if let count = pin.flicks?.count, count > 0 {
-        
-                var urlStringArray = [String]()
-                for obj in pin.flicks! {
-                    let flick = obj as! Flick
-                    if let urlString = flick.urlString {
-                        urlStringArray.append(urlString)
-                    }
-                    
-                    if flick.image == nil {
-                        print("nil image")
-                    }
-                    else {
-                        print("non-nil image")
+                self.stack.container.performBackgroundTask() { (privateContext) in
+
+                    let privatePin = privateContext.object(with: pin.objectID) as! Pin
+                    privateContext.delete(privatePin)
+                    do {
+                        try privateContext.save()
+                    } catch {
+                        print("unable to save private context")
                     }
                 }
-                
-                let controller = storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
-                controller.photoURLString = urlStringArray
-                controller.pin = pin
-                controller.context = context
-                navigationController?.pushViewController(controller, animated: true)
             }
-            else {
+        }
+        // right accessory. Retrieve flicks and navigate to PhotosCVC
+        else if control == view.rightCalloutAccessoryView {
+            
+            let controller = storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
+            controller.pin = pin
+            controller.context = context
+            controller.stack = stack
+            navigationController?.pushViewController(controller, animated: true)
+
+            // no flicks in Pin
+            if let count = pin.flicks?.count, count == 0 {
                 
                 let lon = Double(annotation.coordinate.longitude)
                 let lat = Double(annotation.coordinate.latitude)
                 let radius = SEARCH_RADIUS
                 let geo = (lon, lat, radius)
-                
+
                 let flickr = FlickrAPI()
                 flickr.flickSearchforText(nil, geo: geo) {
                     (data, error) in
@@ -278,18 +284,20 @@ extension MapViewController: MKMapViewDelegate {
                         }
                     }
                     
-                    DispatchQueue.main.async {
+                    self.stack.container.performBackgroundTask() {
+                        (privateContext) in
+                        
+                        let pin = privateContext.object(with: pin.objectID) as! Pin
                         for string in urlStringArray {
-                            let flick = Flick(context: self.context)
+                            let flick = Flick(context: privateContext)
                             flick.urlString = string
                             pin.addToFlicks(flick)
-                            self.saveContext()
                         }
-                        let controller = self.storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
-                        controller.photoURLString = urlStringArray
-                        controller.pin = pin
-                        controller.context = self.context
-                        self.navigationController?.pushViewController(controller, animated: true)
+                        
+                        do {
+                            try privateContext.save()
+                        } catch {
+                        }
                     }
                 }
             }

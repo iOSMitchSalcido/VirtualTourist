@@ -11,12 +11,13 @@ import CoreData
 
 class CoreDataStack {
     
-    private let container: NSPersistentContainer
+    let container: NSPersistentContainer
     
     init(_ modelName: String) {
         container = NSPersistentContainer(name: modelName)
         container.loadPersistentStores() {
             (description, error) in
+            self.container.viewContext.automaticallyMergesChangesFromParent = true
         }
     }
     
