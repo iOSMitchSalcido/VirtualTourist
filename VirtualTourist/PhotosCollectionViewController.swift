@@ -11,31 +11,30 @@ import CoreData
 
 class PhotosCollectionViewController: UICollectionViewController {
 
-    // constant for spacing between cells
-    let CELL_SPACING: CGFloat = 2.0
-    
-    // constant for number of cells in a row
-    let CELLS_PER_ROW: CGFloat = 4.0
+    // cell presentation contants
+    let CELL_SPACING: CGFloat = 2.0     // spacing between cells
+    let CELLS_PER_ROW: CGFloat = 4.0    // number of cells per row
 
+    // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
     var context: NSManagedObjectContext!
     var pin: Pin?
     
+    // layout
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
-    var frc: NSFetchedResultsController<Pin>!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         NotificationCenter.default.addObserver(self,
-                                               selector: #selector(privateContextNotification(_:)),
-                                               name: NSNotification.Name.NSManagedObjectContextDidSave,
-                                               object: nil)
+                                               selector: #selector(contextNotification(_:)),
+                                               name: NSNotification.Name.NSManagedObjectContextObjectsDidChange,
+                                               object: context)
         title = pin?.title
     }
     
-    func privateContextNotification(_ notification: Notification) {
+    func contextNotification(_ notification: Notification) {
         
         NotificationCenter.default.removeObserver(self)
         DispatchQueue.main.async {

@@ -30,12 +30,6 @@ class MapViewController: UIViewController {
         stack = CoreDataStack("VirtualTouristModel")
         context = stack.context
         
-        if context.automaticallyMergesChangesFromParent == true {
-            print("automaticallyMerges = true")
-        }
-        else {
-            print("automaticallyMerges = false")
-        }
         /*
          do a fetch to populate map with pins. Create a fetch request and an empty annotations array.
          Iterate through fetch results using attribs to populate properties in MKPoint annotation.
@@ -228,7 +222,7 @@ extension MapViewController: MKMapViewDelegate {
         // left accessory. Delete Pin and Flick album
         if control == view.leftCalloutAccessoryView {
             
-            // create an proceed/cancel alert to handle deleting location
+            // create proceed/cancel alert to handle deleting location
             presentProceedCancelAlert(title: "Delete Location ?", message: "Delete location and Flick's") {
                 (action) in
                 
@@ -241,6 +235,7 @@ extension MapViewController: MKMapViewDelegate {
                     privateContext.delete(privatePin)
                     do {
                         try privateContext.save()
+                        print("saving private context")
                     } catch {
                         print("unable to save private context")
                     }
