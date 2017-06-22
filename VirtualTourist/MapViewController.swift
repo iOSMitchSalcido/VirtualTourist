@@ -117,7 +117,7 @@ class MapViewController: UIViewController {
                     return
                 }
                 
-                // valid placemark info..continue and create an annot for mapView
+                // valid placemark info.. continue and create an annot for mapView
                 
                 // sift placemark info for pertinent annot title
                 var locationTitle = "Location"
