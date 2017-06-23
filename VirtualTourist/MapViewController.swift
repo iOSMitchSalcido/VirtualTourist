@@ -21,6 +21,7 @@ class MapViewController: UIViewController {
     var context: NSManagedObjectContext!    // ref to managedObjectContext
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
+    let MAX_IMAGES: Int = 100           // maximum number of images to download
     
     // core data stack
     override func viewDidLoad() {
@@ -274,7 +275,8 @@ extension MapViewController: MKMapViewDelegate {
                     
                     var urlStringArray = [String]()
                     for dict in photosArray {
-                        if let urlString = dict["url_m"] as? String {
+                        if let urlString = dict["url_m"] as? String,
+                            urlStringArray.count < self.MAX_IMAGES {
                             urlStringArray.append(urlString)
                         }
                     }
@@ -292,6 +294,7 @@ extension MapViewController: MKMapViewDelegate {
                         do {
                             try privateContext.save()
                         } catch {
+                            print("unable to save private context")
                         }
                     }
                 }
