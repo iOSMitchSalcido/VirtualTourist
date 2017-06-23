@@ -89,7 +89,8 @@ extension PhotosCollectionViewController {
         cell.activityIndicator.isHidden = false
         cell.activityIndicator.startAnimating()
         
-        if let image = flick.image as? UIImage {
+        if let imageData = flick.image,
+            let image = UIImage(data: imageData as Data) {
             
             cell.activityIndicator.isHidden = true
             cell.activityIndicator.stopAnimating()
@@ -105,12 +106,11 @@ extension PhotosCollectionViewController {
             networking.dataTaskForURL(url) {
                 (data, error) in
                 
-                guard let imageData = data else {
+                guard let imageData = data,
+                let image = UIImage(data: imageData) else {
                     return
                 }
-                
-                let image = UIImage(data: imageData)
-                
+                                
                 DispatchQueue.main.async {
                     cell.imageView.image = image
                     cell.activityIndicator.stopAnimating()
@@ -120,7 +120,7 @@ extension PhotosCollectionViewController {
                 self.stack.container.performBackgroundTask() { (privateContext) in
                     
                     let privateFlick = privateContext.object(with: flick.objectID) as! Flick
-                    privateFlick.image = image
+                    privateFlick.image = UIImagePNGRepresentation(image)! as NSData
                     
                     do {
                         try privateContext.save()

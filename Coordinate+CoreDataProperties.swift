@@ -2,7 +2,7 @@
 //  Coordinate+CoreDataProperties.swift
 //  VirtualTourist
 //
-//  Created by Online Training on 6/17/17.
+//  Created by Online Training on 6/23/17.
 //  Copyright © 2017 Mitch Salcido. All rights reserved.
 //
 
@@ -16,8 +16,8 @@ extension Coordinate {
         return NSFetchRequest<Coordinate>(entityName: "Coordinate")
     }
 
-    @NSManaged public var longitude: Double
     @NSManaged public var latitude: Double
+    @NSManaged public var longitude: Double
     @NSManaged public var pin: Pin?
 
 }

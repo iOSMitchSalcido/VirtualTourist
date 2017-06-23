@@ -6,7 +6,7 @@
         <relationship name="pin" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Pin" inverseName="coordinate" inverseEntity="Pin" syncable="YES"/>
     </entity>
     <entity name="Flick" representedClassName="Flick" syncable="YES">
-        <attribute name="image" optional="YES" attributeType="Transformable" customClassName="VirtualTourist.ImageTransformer" syncable="YES"/>
+        <attribute name="image" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" customClassName="VirtualTourist.ImageTransformer" syncable="YES"/>
         <attribute name="urlString" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="pin" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Pin" inverseName="flicks" inverseEntity="Pin" syncable="YES"/>
     </entity>
