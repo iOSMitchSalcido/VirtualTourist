@@ -71,6 +71,11 @@ class MapViewController: UIViewController {
         mapView.addAnnotations(annotations)
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        print("viewWillAppear")
+    }
+    
     // long press GR
     @IBAction func longPressDetected(_ sender: UILongPressGestureRecognizer) {
         
@@ -290,7 +295,6 @@ extension MapViewController: MKMapViewDelegate {
                             flick.urlString = string
                             pin.addToFlicks(flick)
                         }
-                        
                         do {
                             try privateContext.save()
                         } catch {

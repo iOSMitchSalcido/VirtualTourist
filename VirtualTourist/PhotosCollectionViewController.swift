@@ -18,29 +18,52 @@ class PhotosCollectionViewController: UICollectionViewController {
     // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
     var context: NSManagedObjectContext!
-    var pin: Pin?
+    
+    // ref to Pin
+    var pin: Pin!
+    
+    // NSFetchedResultController
+    var fetchResultController: NSFetchedResultsController<Flick>!
     
     // layout
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
-    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(contextNotification(_:)),
-                                               name: NSNotification.Name.NSManagedObjectContextObjectsDidChange,
-                                               object: context)
-        title = pin?.title
+                                               name: Notification.Name.NSManagedObjectContextDidSave,
+                                               object: nil)
+        title = pin.title
+        
+        let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
+        let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
+        let predicate = NSPredicate(format: "pin == %@", pin!)
+        fetchRequest.predicate = predicate
+        fetchRequest.sortDescriptors = [sort]
+        
+        fetchResultController = NSFetchedResultsController(fetchRequest: fetchRequest,
+                                                           managedObjectContext: context,
+                                                           sectionNameKeyPath: nil,
+                                                           cacheName: nil)
+        
+        do {
+            try fetchResultController.performFetch()
+            if let count = fetchResultController.fetchedObjects?.count, count > 0 {
+                print("count: \(count)")
+                fetchResultController.delegate = self
+            }
+        } catch {
+            
+        }
     }
     
     func contextNotification(_ notification: Notification) {
         
-        NotificationCenter.default.removeObserver(self)
-        DispatchQueue.main.async {
-            print("PhotosCollectionViewController - privateContext")
-            self.collectionView?.reloadData()
-        }
+        
+        let stuff = notification.userInfo?[NSInsertedObjectsKey]
+        print(stuff)
     }
     
     // handle collectionView layout
@@ -65,69 +88,38 @@ class PhotosCollectionViewController: UICollectionViewController {
 extension PhotosCollectionViewController {
     
     override func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return 1
+        
+        guard let sections = fetchResultController.sections else {
+            return 0
+        }
+        return sections.count
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
-        guard let count = pin?.flicks?.count else  {
+        guard let section = fetchResultController.sections?[section] else {
             return 0
         }
-        
-        return count
+        return section.numberOfObjects
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotosCVCellID", for: indexPath) as! PhotoCVCell
         
-        guard let flick = pin?.flicks?.object(at: indexPath.row) as? Flick else {
-            return cell
-        }
+        let flick = fetchResultController.object(at: indexPath)
         
         // Configure the cell
         cell.imageView.image = UIImage(named: "DefaultCVCellImage")
         cell.activityIndicator.isHidden = false
         cell.activityIndicator.startAnimating()
         
-        if let imageData = flick.image,
-            let image = UIImage(data: imageData as Data) {
-            
-            cell.activityIndicator.isHidden = true
-            cell.activityIndicator.stopAnimating()
-            cell.imageView.image = image
-        }
-        else if let urlString = flick.urlString,
-            let url = URL(string: urlString) {
-            
-            cell.activityIndicator.isHidden = false
-            cell.activityIndicator.startAnimating()
-            
-            let networking = Networking()
-            networking.dataTaskForURL(url) {
-                (data, error) in
-                
-                guard let imageData = data,
-                let image = UIImage(data: imageData) else {
-                    return
-                }
-                                
-                DispatchQueue.main.async {
-                    cell.imageView.image = image
-                    cell.activityIndicator.stopAnimating()
-                    cell.activityIndicator.isHidden = true
-                }
-                
-                self.stack.container.performBackgroundTask() { (privateContext) in
-                    
-                    let privateFlick = privateContext.object(with: flick.objectID) as! Flick
-                    privateFlick.image = UIImagePNGRepresentation(image)! as NSData
-                    
-                    do {
-                        try privateContext.save()
-                    } catch {
-                        print("unable to save private context")
-                    }
-                }
+        if let imageData = flick.image {
+            print("GOOD image")
+
+            if let image = UIImage(data: imageData as Data) {
+                cell.imageView.image = image
+                cell.activityIndicator.isHidden = true
+                cell.activityIndicator.stopAnimating()
             }
         }
 
@@ -165,4 +157,35 @@ extension PhotosCollectionViewController {
      
      }
      */
+}
+
+extension PhotosCollectionViewController: NSFetchedResultsControllerDelegate {
+    
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        print("willChangeContent , count: \(String(describing: controller.fetchedObjects?.count))")
+    }
+    
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
+        
+        switch type {
+        case .insert:
+            print("didChange -insert , count: \(String(describing: controller.fetchedObjects?.count))")
+            collectionView?.insertItems(at: [newIndexPath!])
+        case .delete:
+            print("didChange -delete , count: \(String(describing: controller.fetchedObjects?.count))")
+        case .move:
+            print("didChange -move , count: \(String(describing: controller.fetchedObjects?.count))")
+        case .update:
+            print("didChange -update , count: \(String(describing: controller.fetchedObjects?.count))")
+        }
+    }
+    
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        print("didChangeContent , count: \(String(describing: controller.fetchedObjects?.count))")
+    }
+    
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
+        
+        print("didChange sectionInfo")
+    }
 }
