@@ -1,5 +1,5 @@
 //
-//  AlbumCollectionViewController.swift
+//  AlbumViewController.swift
 //  VirtualTourist
 //
 //  Created by Online Training on 6/16/17.
@@ -9,7 +9,7 @@
 import UIKit
 import CoreData
 
-class AlbumCollectionViewController: UIViewController {
+class AlbumViewController: UIViewController {
 
     @IBOutlet weak var collectionView: UICollectionView!
     
@@ -106,7 +106,7 @@ class AlbumCollectionViewController: UIViewController {
 }
 
 // MARK: UICollectionViewDataSource
-extension AlbumCollectionViewController: UICollectionViewDataSource {
+extension AlbumViewController: UICollectionViewDataSource {
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         
@@ -173,7 +173,7 @@ extension AlbumCollectionViewController: UICollectionViewDataSource {
     }
 }
 
-extension AlbumCollectionViewController: NSFetchedResultsControllerDelegate {
+extension AlbumViewController: NSFetchedResultsControllerDelegate {
     
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         print("willChangeContent , count: \(String(describing: controller.fetchedObjects?.count))")

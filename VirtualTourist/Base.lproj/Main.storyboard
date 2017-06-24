@@ -53,10 +53,10 @@
             </objects>
             <point key="canvasLocation" x="1076" y="138.98050974512745"/>
         </scene>
-        <!--Album Collection View Controller-->
+        <!--Album View Controller-->
         <scene sceneID="IZV-Vh-D6k">
             <objects>
-                <viewController storyboardIdentifier="AlbumCollectionViewControllerID" id="BKX-hb-Se1" customClass="AlbumCollectionViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="AlbumViewControllerID" id="BKX-hb-Se1" customClass="AlbumViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="U64-XZ-710"/>
                         <viewControllerLayoutGuide type="bottom" id="feD-ZP-GDP"/>
