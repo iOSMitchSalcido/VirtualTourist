@@ -1,5 +1,5 @@
 //
-//  PhotosCollectionViewController.swift
+//  AlbumCollectionViewController.swift
 //  VirtualTourist
 //
 //  Created by Online Training on 6/16/17.
@@ -9,7 +9,7 @@
 import UIKit
 import CoreData
 
-class PhotosCollectionViewController: UICollectionViewController {
+class AlbumCollectionViewController: UICollectionViewController {
 
     // cell presentation contants
     let CELL_SPACING: CGFloat = 2.0     // spacing between cells
@@ -106,7 +106,7 @@ class PhotosCollectionViewController: UICollectionViewController {
 }
 
 // MARK: UICollectionViewDataSource
-extension PhotosCollectionViewController {
+extension AlbumCollectionViewController {
     
     override func numberOfSections(in collectionView: UICollectionView) -> Int {
         
@@ -173,7 +173,7 @@ extension PhotosCollectionViewController {
     }
 }
 
-extension PhotosCollectionViewController: NSFetchedResultsControllerDelegate {
+extension AlbumCollectionViewController: NSFetchedResultsControllerDelegate {
     
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         print("willChangeContent , count: \(String(describing: controller.fetchedObjects?.count))")

@@ -53,11 +53,11 @@
             </objects>
             <point key="canvasLocation" x="1076" y="138.98050974512745"/>
         </scene>
-        <!--Photos Collection View Controller-->
+        <!--Album Collection View Controller-->
         <scene sceneID="93w-cB-Qk8">
             <objects>
-                <collectionViewController storyboardIdentifier="PhotosCollectionViewControllerID" id="5A2-3b-qkH" customClass="PhotosCollectionViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
-                    <collectionView key="view" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" id="Ygw-gb-mxk">
+                <collectionViewController storyboardIdentifier="AlbumCollectionViewControllerID" id="5A2-3b-qkH" customClass="AlbumCollectionViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
+                    <collectionView key="view" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" misplaced="YES" dataMode="prototypes" id="Ygw-gb-mxk">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>

@@ -251,7 +251,7 @@ extension MapViewController: MKMapViewDelegate {
         // right accessory. Retrieve flicks and navigate to PhotosCVC
         else if control == view.rightCalloutAccessoryView {
             
-            let controller = storyboard?.instantiateViewController(withIdentifier: "PhotosCollectionViewControllerID") as! PhotosCollectionViewController
+            let controller = storyboard?.instantiateViewController(withIdentifier: "AlbumCollectionViewControllerID") as! AlbumCollectionViewController
             controller.pin = pin
             controller.context = context
             controller.stack = stack
