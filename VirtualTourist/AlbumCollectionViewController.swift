@@ -9,8 +9,10 @@
 import UIKit
 import CoreData
 
-class AlbumCollectionViewController: UICollectionViewController {
+class AlbumCollectionViewController: UIViewController {
 
+    @IBOutlet weak var collectionView: UICollectionView!
+    
     // cell presentation contants
     let CELL_SPACING: CGFloat = 2.0     // spacing between cells
     let CELLS_PER_ROW: CGFloat = 4.0    // number of cells per row
@@ -69,14 +71,12 @@ class AlbumCollectionViewController: UICollectionViewController {
     }
     
     func contextNotification(_ notification: Notification) {
-        print("contextNotification")
         
         NotificationCenter.default.removeObserver(self)
 
         do {
             try fetchedResultsController.performFetch()
             if let count = fetchedResultsController.fetchedObjects?.count, count > 0 {
-                print("count: \(count)")
                 fetchedResultsController.delegate = self
                 DispatchQueue.main.async {
                     self.collectionView?.reloadData()
@@ -106,9 +106,9 @@ class AlbumCollectionViewController: UICollectionViewController {
 }
 
 // MARK: UICollectionViewDataSource
-extension AlbumCollectionViewController {
+extension AlbumCollectionViewController: UICollectionViewDataSource {
     
-    override func numberOfSections(in collectionView: UICollectionView) -> Int {
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
         
         guard let sections = fetchedResultsController.sections else {
             return 0
@@ -116,7 +116,7 @@ extension AlbumCollectionViewController {
         return sections.count
     }
     
-    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
         guard let section = fetchedResultsController.sections?[section] else {
             return 0
@@ -124,8 +124,8 @@ extension AlbumCollectionViewController {
         return section.numberOfObjects
     }
     
-    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotosCVCellID", for: indexPath) as! PhotoCVCell
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCellID", for: indexPath) as! PhotoCell
         
         let flick = fetchedResultsController.object(at: indexPath)
         

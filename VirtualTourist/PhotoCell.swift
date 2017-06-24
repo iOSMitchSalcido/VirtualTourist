@@ -8,7 +8,7 @@
 
 import UIKit
 
-class PhotoCVCell: UICollectionViewCell {
+class PhotoCell: UICollectionViewCell {
     
     @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!

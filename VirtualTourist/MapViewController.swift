@@ -255,8 +255,10 @@ extension MapViewController: MKMapViewDelegate {
             controller.pin = pin
             controller.context = context
             controller.stack = stack
+            print("pre-push")
             navigationController?.pushViewController(controller, animated: true)
-
+            print("after-push")
+            
             // no flicks in Pin
             if let count = pin.flicks?.count, count == 0 {
                 
