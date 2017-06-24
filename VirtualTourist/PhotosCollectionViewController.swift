@@ -23,7 +23,7 @@ class PhotosCollectionViewController: UICollectionViewController {
     var pin: Pin!
     
     // NSFetchedResultController
-    var fetchResultController: NSFetchedResultsController<Flick>!
+    var fetchedResultsController: NSFetchedResultsController<Flick>!
     
     // layout
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
@@ -31,11 +31,16 @@ class PhotosCollectionViewController: UICollectionViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        title = pin.title
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .refresh,
+                                                            target: self,
+                                                            action: #selector(testBbiPressed(_:)))
+        
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(contextNotification(_:)),
                                                name: Notification.Name.NSManagedObjectContextDidSave,
                                                object: nil)
-        title = pin.title
         
         let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
         let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
@@ -43,27 +48,43 @@ class PhotosCollectionViewController: UICollectionViewController {
         fetchRequest.predicate = predicate
         fetchRequest.sortDescriptors = [sort]
         
-        fetchResultController = NSFetchedResultsController(fetchRequest: fetchRequest,
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
                                                            managedObjectContext: context,
                                                            sectionNameKeyPath: nil,
                                                            cacheName: nil)
         
         do {
-            try fetchResultController.performFetch()
-            if let count = fetchResultController.fetchedObjects?.count, count > 0 {
+            try fetchedResultsController.performFetch()
+            if let count = fetchedResultsController.fetchedObjects?.count, count > 0 {
                 print("count: \(count)")
-                fetchResultController.delegate = self
+                fetchedResultsController.delegate = self
             }
         } catch {
             
         }
     }
     
+    func testBbiPressed(_ sender: UIBarButtonItem) {
+        print("testBbiPressed")
+    }
+    
     func contextNotification(_ notification: Notification) {
+        print("contextNotification")
         
-        
-        let stuff = notification.userInfo?[NSInsertedObjectsKey]
-        print(stuff)
+        NotificationCenter.default.removeObserver(self)
+
+        do {
+            try fetchedResultsController.performFetch()
+            if let count = fetchedResultsController.fetchedObjects?.count, count > 0 {
+                print("count: \(count)")
+                fetchedResultsController.delegate = self
+                DispatchQueue.main.async {
+                    self.collectionView?.reloadData()
+                }
+            }
+        } catch {
+            
+        }
     }
     
     // handle collectionView layout
@@ -89,7 +110,7 @@ extension PhotosCollectionViewController {
     
     override func numberOfSections(in collectionView: UICollectionView) -> Int {
         
-        guard let sections = fetchResultController.sections else {
+        guard let sections = fetchedResultsController.sections else {
             return 0
         }
         return sections.count
@@ -97,7 +118,7 @@ extension PhotosCollectionViewController {
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
-        guard let section = fetchResultController.sections?[section] else {
+        guard let section = fetchedResultsController.sections?[section] else {
             return 0
         }
         return section.numberOfObjects
@@ -106,7 +127,7 @@ extension PhotosCollectionViewController {
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotosCVCellID", for: indexPath) as! PhotoCVCell
         
-        let flick = fetchResultController.object(at: indexPath)
+        let flick = fetchedResultsController.object(at: indexPath)
         
         // Configure the cell
         cell.imageView.image = UIImage(named: "DefaultCVCellImage")
@@ -122,41 +143,34 @@ extension PhotosCollectionViewController {
                 cell.activityIndicator.stopAnimating()
             }
         }
+        else if let urlString = flick.urlString,
+            let url = URL(string: urlString) {
+            
+            let networking = Networking()
+            networking.dataTaskForURL(url) { (data, error) in
+                
+                guard let data = data else {
+                    return
+                }
+                
+                flick.image = data as NSData
+                
+                do {
+                    try self.context.save()
+                } catch {
+                    
+                }
+                
+                DispatchQueue.main.async {
+                    cell.imageView.image = UIImage(data: data)
+                    cell.activityIndicator.isHidden = true
+                    cell.activityIndicator.stopAnimating()
+                }
+            }
+        }
 
         return cell
     }
-}
-
-// MARK: UICollectionViewDelegate
-extension PhotosCollectionViewController {
-    /*
-     // Uncomment this method to specify if the specified item should be highlighted during tracking
-     override func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool {
-     return true
-     }
-     */
-    
-    /*
-     // Uncomment this method to specify if the specified item should be selected
-     override func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
-     return true
-     }
-     */
-    
-    /*
-     // Uncomment these methods to specify if an action menu should be displayed for the specified item, and react to actions performed on the item
-     override func collectionView(_ collectionView: UICollectionView, shouldShowMenuForItemAt indexPath: IndexPath) -> Bool {
-     return false
-     }
-     
-     override func collectionView(_ collectionView: UICollectionView, canPerformAction action: Selector, forItemAt indexPath: IndexPath, withSender sender: Any?) -> Bool {
-     return false
-     }
-     
-     override func collectionView(_ collectionView: UICollectionView, performAction action: Selector, forItemAt indexPath: IndexPath, withSender sender: Any?) {
-     
-     }
-     */
 }
 
 extension PhotosCollectionViewController: NSFetchedResultsControllerDelegate {
@@ -170,7 +184,6 @@ extension PhotosCollectionViewController: NSFetchedResultsControllerDelegate {
         switch type {
         case .insert:
             print("didChange -insert , count: \(String(describing: controller.fetchedObjects?.count))")
-            collectionView?.insertItems(at: [newIndexPath!])
         case .delete:
             print("didChange -delete , count: \(String(describing: controller.fetchedObjects?.count))")
         case .move:
