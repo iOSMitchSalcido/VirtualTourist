@@ -67,7 +67,7 @@
                         <subviews>
                             <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="AGN-pQ-DmZ">
                                 <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
-                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <color key="backgroundColor" red="0.80000001190000003" green="0.80000001190000003" blue="0.80000001190000003" alpha="1" colorSpace="calibratedRGB"/>
                                 <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="10" minimumInteritemSpacing="10" id="h6k-Jx-Ejz">
                                     <size key="itemSize" width="50" height="50"/>
                                     <size key="headerReferenceSize" width="0.0" height="0.0"/>
@@ -109,6 +109,9 @@
                                     <outlet property="delegate" destination="BKX-hb-Se1" id="Bon-pu-7tG"/>
                                 </connections>
                             </collectionView>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="yfy-VJ-ZkX">
+                                <rect key="frame" x="142" y="266" width="37" height="37"/>
+                            </activityIndicatorView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
@@ -116,10 +119,13 @@
                             <constraint firstItem="feD-ZP-GDP" firstAttribute="top" secondItem="AGN-pQ-DmZ" secondAttribute="bottom" id="HNS-ka-jdQ"/>
                             <constraint firstAttribute="trailing" secondItem="AGN-pQ-DmZ" secondAttribute="trailing" id="Z2x-ad-13F"/>
                             <constraint firstItem="AGN-pQ-DmZ" firstAttribute="leading" secondItem="SFi-0c-b8y" secondAttribute="leading" id="ftm-vt-QfO"/>
+                            <constraint firstItem="yfy-VJ-ZkX" firstAttribute="centerX" secondItem="SFi-0c-b8y" secondAttribute="centerX" id="jmt-mk-35z"/>
+                            <constraint firstItem="yfy-VJ-ZkX" firstAttribute="centerY" secondItem="SFi-0c-b8y" secondAttribute="centerY" id="msG-3h-V8u"/>
                         </constraints>
                     </view>
                     <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" prompted="NO"/>
                     <connections>
+                        <outlet property="activityIndicator" destination="yfy-VJ-ZkX" id="jbp-ni-QyJ"/>
                         <outlet property="collectionView" destination="AGN-pQ-DmZ" id="aaC-py-XHy"/>
                         <outlet property="flowLayout" destination="h6k-Jx-Ejz" id="Bpz-Sa-7p8"/>
                     </connections>

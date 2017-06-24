@@ -21,7 +21,7 @@ class MapViewController: UIViewController {
     var context: NSManagedObjectContext!    // ref to managedObjectContext
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
-    let MAX_IMAGES: Int = 100           // maximum number of images to download
+    let MAX_IMAGES: Int = 50           // maximum number of images to download
     
     // core data stack
     override func viewDidLoad() {
@@ -69,11 +69,6 @@ class MapViewController: UIViewController {
         
         // add annotations to mapView
         mapView.addAnnotations(annotations)
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        print("viewWillAppear")
     }
     
     // long press GR
@@ -255,9 +250,7 @@ extension MapViewController: MKMapViewDelegate {
             controller.pin = pin
             controller.context = context
             controller.stack = stack
-            print("pre-push")
             navigationController?.pushViewController(controller, animated: true)
-            print("after-push")
             
             // no flicks in Pin
             if let count = pin.flicks?.count, count == 0 {

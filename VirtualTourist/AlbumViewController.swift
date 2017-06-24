@@ -12,6 +12,7 @@ import CoreData
 class AlbumViewController: UIViewController {
 
     @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     // cell presentation contants
     let CELL_SPACING: CGFloat = 2.0     // spacing between cells
@@ -32,6 +33,10 @@ class AlbumViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        //collectionView.alpha = 0.5
+        activityIndicator.startAnimating()
+        activityIndicator.isHidden = false
         
         title = pin.title
 
@@ -126,6 +131,10 @@ extension AlbumViewController: UICollectionViewDataSource {
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCellID", for: indexPath) as! PhotoCell
+        
+        collectionView.alpha = 1.0
+        activityIndicator.stopAnimating()
+        activityIndicator.isHidden = true
         
         let flick = fetchedResultsController.object(at: indexPath)
         
