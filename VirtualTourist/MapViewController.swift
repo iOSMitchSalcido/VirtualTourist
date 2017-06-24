@@ -71,6 +71,12 @@ class MapViewController: UIViewController {
         mapView.addAnnotations(annotations)
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        navigationController?.setToolbarHidden(true, animated: true)
+    }
+    
     // long press GR
     @IBAction func longPressDetected(_ sender: UILongPressGestureRecognizer) {
         
@@ -168,6 +174,17 @@ class MapViewController: UIViewController {
             break
         }
     }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        
+        guard segue.identifier == "AlbumSegueID" else {
+            return
+        }
+        let controller = segue.destination as! AlbumViewController
+        controller.stack = stack
+        controller.context = context
+        controller.pin = sender as! Pin
+    }
 }
 
 // mapView delegate functions
@@ -246,11 +263,7 @@ extension MapViewController: MKMapViewDelegate {
         // right accessory. Retrieve flicks and navigate to PhotosCVC
         else if control == view.rightCalloutAccessoryView {
             
-            let controller = storyboard?.instantiateViewController(withIdentifier: "AlbumViewControllerID") as! AlbumViewController
-            controller.pin = pin
-            controller.context = context
-            controller.stack = stack
-            navigationController?.pushViewController(controller, animated: true)
+            performSegue(withIdentifier: "AlbumSegueID", sender: pin)
             
             // no flicks in Pin
             if let count = pin.flicks?.count, count == 0 {

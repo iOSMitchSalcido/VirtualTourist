@@ -71,6 +71,12 @@ class AlbumViewController: UIViewController {
         }
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        navigationController?.setToolbarHidden(false, animated: false)
+    }
+    
     func testBbiPressed(_ sender: UIBarButtonItem) {
         print("testBbiPressed")
     }

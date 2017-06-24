@@ -42,6 +42,7 @@
                     <navigationItem key="navigationItem" id="ics-wB-Kvs"/>
                     <connections>
                         <outlet property="mapView" destination="Plf-wC-E2S" id="5uO-Y3-swp"/>
+                        <segue destination="BKX-hb-Se1" kind="show" identifier="AlbumSegueID" id="WMT-j1-zY3"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
