@@ -25,6 +25,8 @@ class AlbumViewController: UIViewController {
     // ref to Pin
     var pin: Pin!
     
+    var newLoad = false
+    
     // NSFetchedResultController
     var fetchedResultsController: NSFetchedResultsController<Flick>!
     
@@ -59,12 +61,12 @@ class AlbumViewController: UIViewController {
                                                            managedObjectContext: context,
                                                            sectionNameKeyPath: nil,
                                                            cacheName: nil)
+        fetchedResultsController.delegate = self
         
         do {
             try fetchedResultsController.performFetch()
             if let count = fetchedResultsController.fetchedObjects?.count, count > 0 {
                 print("count: \(count)")
-                fetchedResultsController.delegate = self
             }
         } catch {
             
@@ -84,7 +86,7 @@ class AlbumViewController: UIViewController {
     func contextNotification(_ notification: Notification) {
         
         NotificationCenter.default.removeObserver(self)
-
+/*
         do {
             try fetchedResultsController.performFetch()
             if let count = fetchedResultsController.fetchedObjects?.count, count > 0 {
@@ -96,6 +98,7 @@ class AlbumViewController: UIViewController {
         } catch {
             
         }
+ */
     }
     
     // handle collectionView layout
@@ -199,6 +202,12 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         switch type {
         case .insert:
             print("didChange -insert , count: \(String(describing: controller.fetchedObjects?.count))")
+            if !newLoad {
+                print("!!newLoad!!")
+                collectionView.reloadData()
+                newLoad = true
+            }
+            //collectionView.insertItems(at: [newIndexPath!])
         case .delete:
             print("didChange -delete , count: \(String(describing: controller.fetchedObjects?.count))")
         case .move:

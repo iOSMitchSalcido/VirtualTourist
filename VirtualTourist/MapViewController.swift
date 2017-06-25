@@ -297,12 +297,17 @@ extension MapViewController: MKMapViewDelegate {
                     self.stack.container.performBackgroundTask() {
                         (privateContext) in
                         
-                        let pin = privateContext.object(with: pin.objectID) as! Pin
+                        var flickArray = [Flick]()
                         for string in urlStringArray {
                             let flick = Flick(context: privateContext)
                             flick.urlString = string
-                            pin.addToFlicks(flick)
+                            flickArray.append(flick)
                         }
+                        
+                        let flickSet = NSOrderedSet(array: flickArray)
+                        let pin = privateContext.object(with: pin.objectID) as! Pin
+                        pin.addToFlicks(flickSet)
+
                         do {
                             try privateContext.save()
                         } catch {
