@@ -87,10 +87,28 @@ class AlbumViewController: UIViewController {
     }
     func trashBbiPressed(_ sender: UIBarButtonItem) {
         
+        for indexPath in  selectedCellsIndexPaths {
+            context.delete(fetchedResultsController.object(at: indexPath))
+        }
+        selectedCellsIndexPaths.removeAll()
+        do {
+            try context.save()
+        } catch {
+            
+        }
+        
+        navigationItem.setLeftBarButton(nil, animated: true)
+        navigationItem.setRightBarButton(reloadBbi, animated: true)
     }
     func cancelBbiPressed(_ sender: UIBarButtonItem) {
         
+        let array = selectedCellsIndexPaths
+        selectedCellsIndexPaths.removeAll()
+        collectionView.reloadItems(at: array)
+        navigationItem.setLeftBarButton(nil, animated: true)
+        navigationItem.setRightBarButton(reloadBbi, animated: true)
     }
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
@@ -196,21 +214,23 @@ extension AlbumViewController: UICollectionViewDelegate {
         
         let cell = collectionView.cellForItem(at: indexPath) as! PhotoCell
         
-        var selected = false
-        var selectedIndex = 0
-        for (index, ip) in selectedCellsIndexPaths.enumerated() {
-            if ip == indexPath {
-                selected = true
-                selectedIndex = index
+        if let index = selectedCellsIndexPaths.index(of: indexPath) {
+            selectedCellsIndexPaths.remove(at: index)
+            cell.selectedImageView.isHidden = true
+            
+            if selectedCellsIndexPaths.count == 0 {
+                navigationItem.setLeftBarButton(nil, animated: true)
+                navigationItem.setRightBarButton(reloadBbi, animated: true)
             }
-        }
-        
-        cell.selectedImageView.isHidden = selected
-        if selected {
-            selectedCellsIndexPaths.remove(at: selectedIndex)
         }
         else {
             selectedCellsIndexPaths.append(indexPath)
+            cell.selectedImageView.isHidden = false
+            
+            if selectedCellsIndexPaths.count == 1 {
+                navigationItem.setLeftBarButton(cancelBbi, animated: true)
+                navigationItem.setRightBarButton(trashBbi, animated: true)
+            }
         }
     }
 }
@@ -231,8 +251,8 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                 collectionView.reloadData()
                 newLoad = true
             }
-            //collectionView.insertItems(at: [newIndexPath!])
         case .delete:
+            collectionView.reloadData()
             print("didChange -delete , count: \(String(describing: controller.fetchedObjects?.count))")
         case .move:
             print("didChange -move , count: \(String(describing: controller.fetchedObjects?.count))")
