@@ -86,6 +86,9 @@
                                                 <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="DefaultCVCellImage" translatesAutoresizingMaskIntoConstraints="NO" id="AZC-pd-CNT">
                                                     <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
                                                 </imageView>
+                                                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="SelectionCheckMark40pt" translatesAutoresizingMaskIntoConstraints="NO" id="yVB-Hn-Or6">
+                                                    <rect key="frame" x="5" y="5" width="40" height="40"/>
+                                                </imageView>
                                                 <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="white" translatesAutoresizingMaskIntoConstraints="NO" id="Zn0-ah-E5c">
                                                     <rect key="frame" x="15" y="15" width="20" height="20"/>
                                                 </activityIndicatorView>
@@ -94,7 +97,9 @@
                                         <constraints>
                                             <constraint firstItem="Zn0-ah-E5c" firstAttribute="centerY" secondItem="Fcv-Mu-DMF" secondAttribute="centerY" id="6sg-f0-oAH"/>
                                             <constraint firstAttribute="trailing" secondItem="AZC-pd-CNT" secondAttribute="trailing" id="N1x-Ye-D5G"/>
+                                            <constraint firstAttribute="trailing" secondItem="yVB-Hn-Or6" secondAttribute="trailing" constant="5" id="QBr-Mh-2Qo"/>
                                             <constraint firstAttribute="bottom" secondItem="AZC-pd-CNT" secondAttribute="bottom" id="c8P-hD-CUh"/>
+                                            <constraint firstAttribute="bottom" secondItem="yVB-Hn-Or6" secondAttribute="bottom" constant="5" id="cGc-Td-pH6"/>
                                             <constraint firstItem="AZC-pd-CNT" firstAttribute="top" secondItem="Fcv-Mu-DMF" secondAttribute="top" id="gkG-Jx-ebH"/>
                                             <constraint firstItem="Zn0-ah-E5c" firstAttribute="centerX" secondItem="Fcv-Mu-DMF" secondAttribute="centerX" id="kS0-Sm-Yh1"/>
                                             <constraint firstItem="AZC-pd-CNT" firstAttribute="leading" secondItem="Fcv-Mu-DMF" secondAttribute="leading" id="tWG-mj-rHN"/>
@@ -102,6 +107,7 @@
                                         <connections>
                                             <outlet property="activityIndicator" destination="Zn0-ah-E5c" id="B6O-YV-liD"/>
                                             <outlet property="imageView" destination="AZC-pd-CNT" id="LHO-Ui-fMg"/>
+                                            <outlet property="selectedImageView" destination="yVB-Hn-Or6" id="E05-bt-FXL"/>
                                         </connections>
                                     </collectionViewCell>
                                 </cells>
@@ -156,5 +162,6 @@
     </scenes>
     <resources>
         <image name="DefaultCVCellImage" width="100" height="100"/>
+        <image name="SelectionCheckMark40pt" width="40" height="40"/>
     </resources>
 </document>

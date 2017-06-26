@@ -11,12 +11,13 @@ import CoreData
 
 class AlbumViewController: UIViewController {
 
+    // main view objects
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     // cell presentation contants
     let CELL_SPACING: CGFloat = 2.0     // spacing between cells
-    let CELLS_PER_ROW: CGFloat = 4.0    // number of cells per row
+    let CELLS_PER_ROW: CGFloat = 4.0    // number of cells per row.same for both portrait and landscape orientation
 
     // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
@@ -25,32 +26,44 @@ class AlbumViewController: UIViewController {
     // ref to Pin
     var pin: Pin!
     
+    // new Load. Test bool used to initialize collectionView reload only once, after insert is detected
     var newLoad = false
+    
+    // bbi's
+    var reloadBbi: UIBarButtonItem! // dumps all photo's and replaces with new set of photo's
+    var trashBbi: UIBarButtonItem!  // deletes selected photos
+    var cancelBbi: UIBarButtonItem! // cancel "delete" operation...deselect photos
     
     // NSFetchedResultController
     var fetchedResultsController: NSFetchedResultsController<Flick>!
     
+    var selectedCellsIndexPaths = [IndexPath]()
     // layout
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        //collectionView.alpha = 0.5
-        activityIndicator.startAnimating()
-        activityIndicator.isHidden = false
-        
+        // view title
         title = pin.title
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .refresh,
+        // initialize view in "search" mode..
+        activityIndicator.startAnimating()
+        activityIndicator.isHidden = false
+    
+        // create bbi's
+        reloadBbi = UIBarButtonItem(barButtonSystemItem: .refresh,
                                                             target: self,
-                                                            action: #selector(testBbiPressed(_:)))
+                                                            action: #selector(reloadBbiPressed(_:)))
+        trashBbi = UIBarButtonItem(barButtonSystemItem: .trash,
+                                   target: self,
+                                   action: #selector(trashBbiPressed(_:)))
+        cancelBbi = UIBarButtonItem(barButtonSystemItem: .cancel,
+                                    target: self,
+                                    action: #selector(cancelBbiPressed(_:)))
         
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(contextNotification(_:)),
-                                               name: Notification.Name.NSManagedObjectContextDidSave,
-                                               object: nil)
         
+        // Core Data: Request, Sort/Predicate, and Controller
         let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
         let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
         let predicate = NSPredicate(format: "pin == %@", pin!)
@@ -65,40 +78,23 @@ class AlbumViewController: UIViewController {
         
         do {
             try fetchedResultsController.performFetch()
-            if let count = fetchedResultsController.fetchedObjects?.count, count > 0 {
-                print("count: \(count)")
-            }
         } catch {
-            
         }
     }
     
+    func reloadBbiPressed(_ sender: UIBarButtonItem) {
+        
+    }
+    func trashBbiPressed(_ sender: UIBarButtonItem) {
+        
+    }
+    func cancelBbiPressed(_ sender: UIBarButtonItem) {
+        
+    }
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
         navigationController?.setToolbarHidden(false, animated: false)
-    }
-    
-    func testBbiPressed(_ sender: UIBarButtonItem) {
-        print("testBbiPressed")
-    }
-    
-    func contextNotification(_ notification: Notification) {
-        
-        NotificationCenter.default.removeObserver(self)
-/*
-        do {
-            try fetchedResultsController.performFetch()
-            if let count = fetchedResultsController.fetchedObjects?.count, count > 0 {
-                fetchedResultsController.delegate = self
-                DispatchQueue.main.async {
-                    self.collectionView?.reloadData()
-                }
-            }
-        } catch {
-            
-        }
- */
     }
     
     // handle collectionView layout
@@ -152,6 +148,9 @@ extension AlbumViewController: UICollectionViewDataSource {
         cell.activityIndicator.isHidden = false
         cell.activityIndicator.startAnimating()
         
+        // test if cell is selected for deletion
+        cell.selectedImageView.isHidden = !selectedCellsIndexPaths.contains(indexPath)
+        
         if let imageData = flick.image {
             print("GOOD image")
 
@@ -188,6 +187,31 @@ extension AlbumViewController: UICollectionViewDataSource {
         }
 
         return cell
+    }
+}
+
+extension AlbumViewController: UICollectionViewDelegate {
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        
+        let cell = collectionView.cellForItem(at: indexPath) as! PhotoCell
+        
+        var selected = false
+        var selectedIndex = 0
+        for (index, ip) in selectedCellsIndexPaths.enumerated() {
+            if ip == indexPath {
+                selected = true
+                selectedIndex = index
+            }
+        }
+        
+        cell.selectedImageView.isHidden = selected
+        if selected {
+            selectedCellsIndexPaths.remove(at: selectedIndex)
+        }
+        else {
+            selectedCellsIndexPaths.append(indexPath)
+        }
     }
 }
 
