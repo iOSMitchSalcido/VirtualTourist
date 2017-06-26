@@ -155,18 +155,22 @@ class MapViewController: UIViewController {
                     locationTitle = ocean
                 }
                 
+                /*
+                 !! Begin process of creating Pin and downloading photo's
+                */
                 self.stack.container.performBackgroundTask() { (privateContext) in
                     
-                    // coordinate
+                    // create coordinate MO
                     let newCoord = Coordinate(context: privateContext)
                     newCoord.latitude = Double(coord.latitude)
                     newCoord.longitude = Double(coord.longitude)
                     
-                    // Pin
+                    // create Pin MO
                     let newPin = Pin(context: privateContext)
                     newPin.coordinate = newCoord
                     newPin.title = locationTitle
                     
+                    // Save
                     do {
                         try privateContext.save()
                         print("newPin - good save")
@@ -176,11 +180,11 @@ class MapViewController: UIViewController {
                         annot.coordinate = coord
                         annot.title = locationTitle
                         annot.pin = (self.context.object(with: newPin.objectID) as! Pin)
-                        
                         DispatchQueue.main.async {
                             self.mapView.addAnnotation(annot)
                         }
 
+                        // Begin Flickr image search
                         let flickr = FlickrAPI()
                         let geo = (newCoord.longitude, newCoord.latitude, self.SEARCH_RADIUS)
                         flickr.flickSearchforText(nil, geo: geo) {
@@ -195,6 +199,7 @@ class MapViewController: UIViewController {
                                     return
                             }
                             
+                            // retieve url strings
                             var urlStringArray = [String]()
                             for dict in photosArray {
                                 if let urlString = dict["url_m"] as? String,
@@ -203,15 +208,23 @@ class MapViewController: UIViewController {
                                 }
                             }
                             
+                            // create a Flick MO for each url string..add to Pin
                             for string in urlStringArray {
                                 let flick = Flick(context: privateContext)
                                 flick.urlString = string
                                 newPin.addToFlicks(flick)
                             }
                             
+                            // Save
                             do {
                                 try privateContext.save()
                                 print("urlStrings - good save")
+                                
+                                /*
+                                 Suspect Pin deleting issue is here..
+                                 When deleting Pin who's flicks are still being downloaded, sometimes get a bad save
+                                 ..some type of "collision" taking place in the way I'm performing background tasks
+                                */
                                 if let flicks = newPin.flicks?.array as? [Flick] {
                                   
                                     for flick in flicks {
