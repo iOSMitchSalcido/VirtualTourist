@@ -17,11 +17,8 @@ class MapViewController: UIViewController {
 
     @IBOutlet weak var mapView: MKMapView!  // ref to mapView
     
-    var stack: CoreDataStack!
+    var stack: CoreDataStack!               // ref to CoreDataStack
     var context: NSManagedObjectContext!    // ref to managedObjectContext
-    
-    let SEARCH_RADIUS: Double = 10.0    // default search radius
-    let MAX_IMAGES: Int = 10           // maximum number of images to download
     
     // core data stack
     override func viewDidLoad() {
@@ -237,7 +234,8 @@ extension MapViewController: MKMapViewDelegate {
         else {
             pinView!.annotation = annotation
         }
-        
+        pinView!.annotation = annotation
+
         return pinView
     }
     
@@ -258,7 +256,6 @@ extension MapViewController: MKMapViewDelegate {
                 (action) in
                 
                 // remove pin from map
-                //annotation.pin = nil
                 mapView.removeAnnotation(annotation)
                 
                 self.stack.container.performBackgroundTask() { (privateContext) in

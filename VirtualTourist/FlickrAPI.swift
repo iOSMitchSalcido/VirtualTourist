@@ -15,7 +15,7 @@ import CoreData
 struct FlickrAPI {
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
-    let MAX_IMAGES: Int = 10            // maximum number of images to download
+    let MAX_IMAGES: Int = 100            // maximum number of images to download
     
     // search flicks for photos. Options for geography and text search
     func flickSearchforText(_ text: String? = nil,
@@ -113,8 +113,7 @@ struct FlickrAPI {
                             
                             if let urlString = flick.urlString,
                                 let url = URL(string: urlString),
-                                let data = NSData(contentsOf: url),
-                                privatePin.coordinate != nil {
+                                let data = NSData(contentsOf: url) {
                                 
                                 flick.image = data
                                 do {
