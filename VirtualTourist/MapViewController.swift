@@ -21,7 +21,7 @@ class MapViewController: UIViewController {
     var context: NSManagedObjectContext!    // ref to managedObjectContext
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
-    let MAX_IMAGES: Int = 50           // maximum number of images to download
+    let MAX_IMAGES: Int = 100           // maximum number of images to download
     
     // core data stack
     override func viewDidLoad() {
@@ -37,6 +37,20 @@ class MapViewController: UIViewController {
          This annotation is then added to the annotations array, which is then added to the
          mapView annotations
         */
+        
+        
+        let flickFr: NSFetchRequest<Flick> = Flick.fetchRequest()
+        do {
+            let flicksResults = try context.fetch(flickFr)
+            
+            for flick in  flicksResults {
+                if flick.pin == nil {
+                    print("unowned flick")
+                }
+            }
+        } catch {
+            
+        }
         
         // array to hold annotations
         var annotations = [VTAnnotation]()
@@ -126,7 +140,7 @@ class MapViewController: UIViewController {
                 
                 // valid placemark info.. continue and create an annot for mapView
                 
-                // sift placemark info for pertinent annot title
+                // sift placemark info for pertinent annot title..default title is "Location"
                 var locationTitle = "Location"
                 if let locality = placemark.locality {
                     locationTitle = locality
@@ -155,6 +169,7 @@ class MapViewController: UIViewController {
                     
                     do {
                         try privateContext.save()
+                        print("newPin - good save")
                         
                         // create/config annot, add to mapView
                         let annot = VTAnnotation()
@@ -165,8 +180,66 @@ class MapViewController: UIViewController {
                         DispatchQueue.main.async {
                             self.mapView.addAnnotation(annot)
                         }
+
+                        let flickr = FlickrAPI()
+                        let geo = (newCoord.longitude, newCoord.latitude, self.SEARCH_RADIUS)
+                        flickr.flickSearchforText(nil, geo: geo) {
+                            (data, error) in
+                            
+                            guard let data = data else {
+                                return
+                            }
+                            
+                            guard let photosDict = data["photos"] as? [String: AnyObject],
+                                let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
+                                    return
+                            }
+                            
+                            var urlStringArray = [String]()
+                            for dict in photosArray {
+                                if let urlString = dict["url_m"] as? String,
+                                    urlStringArray.count < self.MAX_IMAGES {
+                                    urlStringArray.append(urlString)
+                                }
+                            }
+                            
+                            for string in urlStringArray {
+                                let flick = Flick(context: privateContext)
+                                flick.urlString = string
+                                newPin.addToFlicks(flick)
+                            }
+                            
+                            do {
+                                try privateContext.save()
+                                print("urlStrings - good save")
+                                if let flicks = newPin.flicks?.array as? [Flick] {
+                                  
+                                    for flick in flicks {
+                                        
+                                        if let urlString = flick.urlString,
+                                            let url = URL(string: urlString),
+                                            let data = NSData(contentsOf: url),
+                                            newPin.coordinate != nil {
+                                            
+                                            flick.image = data
+                                            do {
+                                                try privateContext.save()
+                                                print("imageData - good save")
+                                            } catch {
+                                                print("imageData - unable to save private context")
+                                            }
+                                        }
+                                        else {
+                                            print("something nil in image data save")
+                                        }
+                                    }
+                                }
+                            } catch {
+                                print("urlStrings - unable to save private context")
+                            }
+                        }
                     } catch {
-                        print("error saving private context")
+                        print("newPin - error saving private context")
                     }
                 }
             }
@@ -253,69 +326,16 @@ extension MapViewController: MKMapViewDelegate {
                     privateContext.delete(privatePin)
                     do {
                         try privateContext.save()
-                        print("saving private context")
+                        print("delete Pin - good save")
                     } catch {
-                        print("unable to save private context")
+                        print("delete Pin - unable to save private context")
                     }
                 }
             }
         }
-        // right accessory. Retrieve flicks and navigate to PhotosCVC
+        // right accessory. Navigate to AlbumVC
         else if control == view.rightCalloutAccessoryView {
-            
             performSegue(withIdentifier: "AlbumSegueID", sender: pin)
-            
-            // no flicks in Pin
-            if let count = pin.flicks?.count, count == 0 {
-                
-                let lon = Double(annotation.coordinate.longitude)
-                let lat = Double(annotation.coordinate.latitude)
-                let radius = SEARCH_RADIUS
-                let geo = (lon, lat, radius)
-
-                let flickr = FlickrAPI()
-                flickr.flickSearchforText(nil, geo: geo) {
-                    (data, error) in
-                    
-                    guard let data = data else {
-                        return
-                    }
-                    
-                    guard let photosDict = data["photos"] as? [String: AnyObject],
-                        let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
-                            return
-                    }
-                    
-                    var urlStringArray = [String]()
-                    for dict in photosArray {
-                        if let urlString = dict["url_m"] as? String,
-                            urlStringArray.count < self.MAX_IMAGES {
-                            urlStringArray.append(urlString)
-                        }
-                    }
-                    
-                    self.stack.container.performBackgroundTask() {
-                        (privateContext) in
-                        
-                        var flickArray = [Flick]()
-                        for string in urlStringArray {
-                            let flick = Flick(context: privateContext)
-                            flick.urlString = string
-                            flickArray.append(flick)
-                        }
-                        
-                        let flickSet = NSOrderedSet(array: flickArray)
-                        let pin = privateContext.object(with: pin.objectID) as! Pin
-                        pin.addToFlicks(flickSet)
-
-                        do {
-                            try privateContext.save()
-                        } catch {
-                            print("unable to save private context")
-                        }
-                    }
-                }
-            }
         }
     }
 }
