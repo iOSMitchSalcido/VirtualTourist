@@ -318,6 +318,7 @@ extension MapViewController: MKMapViewDelegate {
                 (action) in
                 
                 // remove pin from map
+                annotation.pin = nil
                 mapView.removeAnnotation(annotation)
                 
                 self.stack.container.performBackgroundTask() { (privateContext) in
