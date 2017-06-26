@@ -10,6 +10,7 @@
  */
 
 import Foundation
+import CoreData
 
 struct FlickrAPI {
     
@@ -53,6 +54,10 @@ struct FlickrAPI {
         // execute task
         let networking = Networking()
         networking.dataTaskForParameters(params as [String : AnyObject], completion: completion)
+    }
+    
+    func createFlickrAlbumForPin(_ pin: Pin, container: NSPersistentContainer) {
+        
     }
 }
 
