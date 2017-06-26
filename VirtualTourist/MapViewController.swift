@@ -21,7 +21,7 @@ class MapViewController: UIViewController {
     var context: NSManagedObjectContext!    // ref to managedObjectContext
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
-    let MAX_IMAGES: Int = 100           // maximum number of images to download
+    let MAX_IMAGES: Int = 10           // maximum number of images to download
     
     // core data stack
     override func viewDidLoad() {
@@ -155,105 +155,32 @@ class MapViewController: UIViewController {
                     locationTitle = ocean
                 }
                 
-                /*
-                 !! Begin process of creating Pin and downloading photo's
-                */
-                self.stack.container.performBackgroundTask() { (privateContext) in
+                // create coordinate MO
+                let newCoord = Coordinate(context: self.context)
+                newCoord.latitude = Double(coord.latitude)
+                newCoord.longitude = Double(coord.longitude)
+                
+                // create Pin MO
+                let newPin = Pin(context: self.context)
+                newPin.coordinate = newCoord
+                newPin.title = locationTitle
+                
+                do {
+                    try self.context.save()
                     
-                    // create coordinate MO
-                    let newCoord = Coordinate(context: privateContext)
-                    newCoord.latitude = Double(coord.latitude)
-                    newCoord.longitude = Double(coord.longitude)
-                    
-                    // create Pin MO
-                    let newPin = Pin(context: privateContext)
-                    newPin.coordinate = newCoord
-                    newPin.title = locationTitle
-                    
-                    // Save
-                    do {
-                        try privateContext.save()
-                        print("newPin - good save")
-                        
-                        // create/config annot, add to mapView
-                        let annot = VTAnnotation()
-                        annot.coordinate = coord
-                        annot.title = locationTitle
-                        annot.pin = (self.context.object(with: newPin.objectID) as! Pin)
-                        DispatchQueue.main.async {
-                            self.mapView.addAnnotation(annot)
-                        }
-
-                        // Begin Flickr image search
-                        let flickr = FlickrAPI()
-                        let geo = (newCoord.longitude, newCoord.latitude, self.SEARCH_RADIUS)
-                        flickr.flickSearchforText(nil, geo: geo) {
-                            (data, error) in
-                            
-                            guard let data = data else {
-                                return
-                            }
-                            
-                            guard let photosDict = data["photos"] as? [String: AnyObject],
-                                let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
-                                    return
-                            }
-                            
-                            // retieve url strings
-                            var urlStringArray = [String]()
-                            for dict in photosArray {
-                                if let urlString = dict["url_m"] as? String,
-                                    urlStringArray.count < self.MAX_IMAGES {
-                                    urlStringArray.append(urlString)
-                                }
-                            }
-                            
-                            // create a Flick MO for each url string..add to Pin
-                            for string in urlStringArray {
-                                let flick = Flick(context: privateContext)
-                                flick.urlString = string
-                                newPin.addToFlicks(flick)
-                            }
-                            
-                            // Save
-                            do {
-                                try privateContext.save()
-                                print("urlStrings - good save")
-                                
-                                /*
-                                 Suspect Pin deleting issue is here..
-                                 When deleting Pin who's flicks are still being downloaded, sometimes get a bad save
-                                 ..some type of "collision" taking place in the way I'm performing background tasks
-                                */
-                                if let flicks = newPin.flicks?.array as? [Flick] {
-                                  
-                                    for flick in flicks {
-                                        
-                                        if let urlString = flick.urlString,
-                                            let url = URL(string: urlString),
-                                            let data = NSData(contentsOf: url),
-                                            newPin.coordinate != nil {
-                                            
-                                            flick.image = data
-                                            do {
-                                                try privateContext.save()
-                                                print("imageData - good save")
-                                            } catch {
-                                                print("imageData - unable to save private context")
-                                            }
-                                        }
-                                        else {
-                                            print("something nil in image data save")
-                                        }
-                                    }
-                                }
-                            } catch {
-                                print("urlStrings - unable to save private context")
-                            }
-                        }
-                    } catch {
-                        print("newPin - error saving private context")
+                    // create/config annot, add to mapView
+                    let annot = VTAnnotation()
+                    annot.coordinate = coord
+                    annot.title = locationTitle
+                    annot.pin = newPin
+                    DispatchQueue.main.async {
+                        self.mapView.addAnnotation(annot)
                     }
+                    
+                    let flickr = FlickrAPI()
+                    flickr.createFlickrAlbumForPin(newPin, withContainer: self.stack.container)
+                } catch {
+                    
                 }
             }
         default:
@@ -331,7 +258,7 @@ extension MapViewController: MKMapViewDelegate {
                 (action) in
                 
                 // remove pin from map
-                annotation.pin = nil
+                //annotation.pin = nil
                 mapView.removeAnnotation(annotation)
                 
                 self.stack.container.performBackgroundTask() { (privateContext) in
@@ -349,6 +276,12 @@ extension MapViewController: MKMapViewDelegate {
         }
         // right accessory. Navigate to AlbumVC
         else if control == view.rightCalloutAccessoryView {
+            
+            if pin.flicks?.count == 0 {
+                let flickr = FlickrAPI()
+                flickr.createFlickrAlbumForPin(pin, withContainer: stack.container)
+            }
+            
             performSegue(withIdentifier: "AlbumSegueID", sender: pin)
         }
     }

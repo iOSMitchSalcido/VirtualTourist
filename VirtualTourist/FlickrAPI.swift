@@ -14,6 +14,9 @@ import CoreData
 
 struct FlickrAPI {
     
+    let SEARCH_RADIUS: Double = 10.0    // default search radius
+    let MAX_IMAGES: Int = 10            // maximum number of images to download
+    
     // search flicks for photos. Options for geography and text search
     func flickSearchforText(_ text: String? = nil,
                             geo: (lon: Double, lat: Double, radius: Double)? = nil,
@@ -27,11 +30,11 @@ struct FlickrAPI {
         
         // base params..will ultimately be pulled as queryItems in url creation...
         var items = ["method": FlickrAPI.Methods.photosSearch,
-                          FlickrAPI.Keys.apiKey: FlickrAPI.Values.apiKey,
-                          FlickrAPI.Keys.format: FlickrAPI.Values.json,
-                          FlickrAPI.Keys.extras: FlickrAPI.Values.mediumURL,
-                          FlickrAPI.Keys.nojsoncallback: FlickrAPI.Values.nojsoncallback,
-                          FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch]
+                     FlickrAPI.Keys.apiKey: FlickrAPI.Values.apiKey,
+                     FlickrAPI.Keys.format: FlickrAPI.Values.json,
+                     FlickrAPI.Keys.extras: FlickrAPI.Values.mediumURL,
+                     FlickrAPI.Keys.nojsoncallback: FlickrAPI.Values.nojsoncallback,
+                     FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch]
         
         // add text search
         if let text = text {
@@ -56,8 +59,81 @@ struct FlickrAPI {
         networking.dataTaskForParameters(params as [String : AnyObject], completion: completion)
     }
     
-    func createFlickrAlbumForPin(_ pin: Pin, container: NSPersistentContainer) {
+    func createFlickrAlbumForPin(_ pin: Pin, withContainer container: NSPersistentContainer) {
         
+        container.performBackgroundTask() { (privateContext) in
+            
+            // Begin Flickr image search
+            let lon = Double(pin.coordinate!.longitude)
+            let lat = Double(pin.coordinate!.latitude)
+            
+            self.flickSearchforText(nil, geo: (lon, lat, self.SEARCH_RADIUS)) {
+                (data, error) in
+                
+                guard let data = data else {
+                    return
+                }
+                
+                guard let photosDict = data["photos"] as? [String: AnyObject],
+                    let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
+                        return
+                }
+                
+                // retieve url strings
+                var urlStringArray = [String]()
+                for dict in photosArray {
+                    if let urlString = dict["url_m"] as? String,
+                        urlStringArray.count < self.MAX_IMAGES {
+                        urlStringArray.append(urlString)
+                    }
+                }
+                
+                let privatePin = privateContext.object(with: pin.objectID) as! Pin
+                
+                // create a Flick MO for each url string..add to Pin
+                for string in urlStringArray {
+                    let flick = Flick(context: privateContext)
+                    flick.urlString = string
+                    privatePin.addToFlicks(flick)
+                }
+                
+                // Save
+                do {
+                    try privateContext.save()
+                    print("urlStrings - good save")
+                    
+                    /*
+                     Suspect Pin deleting issue is here..
+                     When deleting Pin who's flicks are still being downloaded, sometimes get a bad save
+                     ..some type of "collision" taking place in the way I'm performing background tasks
+                     */
+                    if let flicks = privatePin.flicks?.array as? [Flick] {
+                        
+                        for flick in flicks {
+                            
+                            if let urlString = flick.urlString,
+                                let url = URL(string: urlString),
+                                let data = NSData(contentsOf: url),
+                                privatePin.coordinate != nil {
+                                
+                                flick.image = data
+                                do {
+                                    try privateContext.save()
+                                    print("imageData - good save")
+                                } catch {
+                                    print("imageData - unable to save private context")
+                                }
+                            }
+                            else {
+                                print("something nil in image data save")
+                            }
+                        }
+                    }
+                } catch {
+                    print("urlStrings - unable to save private context")
+                }
+            }
+        }
     }
 }
 
