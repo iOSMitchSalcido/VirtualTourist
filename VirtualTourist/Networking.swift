@@ -73,6 +73,7 @@ struct Networking {
         task.resume()
     }
     
+
     // perform a data task, operates on a Data object (such as image data returned from Flickr)
     func dataTaskForURL(_ url: URL, completion: @escaping (Data?, VTError?) -> Void) {
         
@@ -109,7 +110,7 @@ struct Networking {
         // fire task
         task.resume()
     }
-    
+
     // create URL from parameters
     func urlForParameters(_ params: [String: AnyObject]) -> URL? {
 

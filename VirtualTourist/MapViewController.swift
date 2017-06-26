@@ -339,14 +339,3 @@ extension MapViewController: MKMapViewDelegate {
         }
     }
 }
-
-extension MapViewController {
-    
-    func saveContext() {
-        do {
-            try context.save()
-        } catch {
-            print("unable to save context")
-        }
-    }
-}
