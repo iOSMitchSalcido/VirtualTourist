@@ -175,7 +175,7 @@ class MapViewController: UIViewController {
                     }
                     
                     let flickr = FlickrAPI()
-                    flickr.createFlickrAlbumForPin(newPin, withContainer: self.stack.container)
+                    flickr.createFlickrAlbumForAnnot(annot, withContainer: self.stack.container)
                 } catch {
                     
                 }
@@ -257,16 +257,23 @@ extension MapViewController: MKMapViewDelegate {
                 
                 // remove pin from map
                 mapView.removeAnnotation(annotation)
-                
-                self.stack.container.performBackgroundTask() { (privateContext) in
+                annotation.pin = nil
 
+                self.stack.container.performBackgroundTask() { (privateContext) in
+                    
                     let privatePin = privateContext.object(with: pin.objectID) as! Pin
                     privateContext.delete(privatePin)
                     do {
-                        try privateContext.save()
-                        print("delete Pin - good save")
+                        
+                        if privateContext.hasChanges {
+                            try privateContext.save()
+                        }
+                        if self.context.hasChanges {
+                            try self.context.save()
+                        }
+                        print("delete Pin MapView - good save")
                     } catch {
-                        print("delete Pin - unable to save private context")
+                        print("delete Pin MapView - unable to save private context")
                     }
                 }
             }

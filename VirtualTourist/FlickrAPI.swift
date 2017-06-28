@@ -134,6 +134,95 @@ struct FlickrAPI {
             }
         }
     }
+    
+    
+    
+    
+    func createFlickrAlbumForAnnot(_ annot: VTAnnotation, withContainer container: NSPersistentContainer) {
+        
+        container.performBackgroundTask() { (privateContext) in
+            
+            let pin = annot.pin!
+            
+            // Begin Flickr image search
+            let lon = Double(pin.coordinate!.longitude)
+            let lat = Double(pin.coordinate!.latitude)
+            
+            self.flickSearchforText(nil, geo: (lon, lat, self.SEARCH_RADIUS)) {
+                (data, error) in
+                
+                guard let data = data else {
+                    return
+                }
+                
+                guard let photosDict = data["photos"] as? [String: AnyObject],
+                    let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
+                        return
+                }
+                
+                // retieve url strings
+                var urlStringArray = [String]()
+                for dict in photosArray {
+                    if let urlString = dict["url_m"] as? String,
+                        urlStringArray.count < self.MAX_IMAGES {
+                        urlStringArray.append(urlString)
+                    }
+                }
+                
+                let privatePin = privateContext.object(with: pin.objectID) as! Pin
+                
+                // create a Flick MO for each url string..add to Pin
+                for string in urlStringArray {
+                    
+                    if annot.pin != nil {
+                        let flick = Flick(context: privateContext)
+                        flick.urlString = string
+                        privatePin.addToFlicks(flick)
+                    }
+                }
+                
+                // Save
+                do {
+                    try privateContext.save()
+                    print("urlStrings - good save")
+                    
+                    /*
+                     Suspect Pin deleting issue is here..
+                     When deleting Pin who's flicks are still being downloaded, sometimes get a bad save
+                     ..some type of "collision" taking place in the way I'm performing background tasks
+                     */
+                    if let flicks = privatePin.flicks?.array as? [Flick] {
+                        
+                        for flick in flicks {
+                            
+                            if annot.pin != nil,
+                                let urlString = flick.urlString,
+                                let url = URL(string: urlString),
+                                let data = NSData(contentsOf: url) {
+                                
+                                if annot.pin == nil {
+                                    print("nil Pin")
+                                }
+                                
+                                flick.image = data
+                                do {
+                                    try privateContext.save()
+                                    print("imageData - good save")
+                                } catch {
+                                    print("imageData - unable to save private context")
+                                }
+                            }
+                            else {
+                                print("something nil in image data save")
+                            }
+                        }
+                    }
+                } catch {
+                    print("urlStrings - unable to save private context")
+                }
+            }
+        }
+    }
 }
 
 // constants

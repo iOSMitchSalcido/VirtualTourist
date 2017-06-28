@@ -212,21 +212,41 @@ extension AlbumViewController: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
+        /*
+         Handle placing cell in selection state (checkmark in cell) which provides user visual queue
+         that cell is ready for deletion. Also deselects cell that is currently selected.
+        */
+        
+        // verift image has been downloaded
+        guard fetchedResultsController.object(at: indexPath).image != nil else {
+                return
+        }
+        
+        // retireve cell cast as PhotoCell
         let cell = collectionView.cellForItem(at: indexPath) as! PhotoCell
         
+        // test if cell is selected(indexPath will be in selectedCellsIndexPaths array)
         if let index = selectedCellsIndexPaths.index(of: indexPath) {
+            
+            // cell is selected..proceed to deselect
+            // remove indexPath from array and hide checkmark
             selectedCellsIndexPaths.remove(at: index)
             cell.selectedImageView.isHidden = true
             
+            // test is no selected cells...restore bbi's/UI
             if selectedCellsIndexPaths.count == 0 {
                 navigationItem.setLeftBarButton(nil, animated: true)
                 navigationItem.setRightBarButton(reloadBbi, animated: true)
             }
         }
         else {
+            
+            // cell is not selected. Proceed with selecting
+            // add indexPath to selectedCellsIndexPaths array, show checkmark
             selectedCellsIndexPaths.append(indexPath)
             cell.selectedImageView.isHidden = false
             
+            // test if a selected cell...update bbi's/UI
             if selectedCellsIndexPaths.count == 1 {
                 navigationItem.setLeftBarButton(cancelBbi, animated: true)
                 navigationItem.setRightBarButton(trashBbi, animated: true)
