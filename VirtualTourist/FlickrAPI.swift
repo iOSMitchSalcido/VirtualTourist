@@ -234,6 +234,7 @@ extension FlickrAPI {
         static let apiKey = "api_key"
         static let format = "format"
         static let extras = "extras"
+        static let title = "title"
         static let nojsoncallback = "nojsoncallback"
         static let safeSearch = "safe_search"
         
@@ -254,8 +255,7 @@ extension FlickrAPI {
         static let mediumURL = "url_m"
         static let nojsoncallback = "1"
         static let safeSearch = "1"
-        
-        // radius search accuracy
+        static let title = "title"
         static let radius10K = "10"
     }
     

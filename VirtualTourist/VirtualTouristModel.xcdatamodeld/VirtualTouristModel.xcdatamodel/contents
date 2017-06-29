@@ -7,6 +7,7 @@
     </entity>
     <entity name="Flick" representedClassName="Flick" syncable="YES">
         <attribute name="image" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" customClassName="VirtualTourist.ImageTransformer" syncable="YES"/>
+        <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="urlString" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="pin" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Pin" inverseName="flicks" inverseEntity="Pin" syncable="YES"/>
     </entity>
@@ -17,7 +18,7 @@
     </entity>
     <elements>
         <element name="Coordinate" positionX="-36" positionY="9" width="128" height="90"/>
-        <element name="Flick" positionX="-54" positionY="-9" width="128" height="90"/>
+        <element name="Flick" positionX="-54" positionY="-9" width="128" height="105"/>
         <element name="Pin" positionX="-63" positionY="-18" width="128" height="90"/>
     </elements>
 </model>

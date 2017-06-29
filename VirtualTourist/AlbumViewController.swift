@@ -10,7 +10,7 @@ import UIKit
 import CoreData
 
 class AlbumViewController: UIViewController {
-
+    
     // main view objects
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
@@ -34,10 +34,15 @@ class AlbumViewController: UIViewController {
     var trashBbi: UIBarButtonItem!  // deletes selected photos
     var cancelBbi: UIBarButtonItem! // cancel "delete" operation...deselect photos
     
+    // progressView..indicate flick download progress
+    var progressView: UIProgressView?
+    
     // NSFetchedResultController
     var fetchedResultsController: NSFetchedResultsController<Flick>!
     
+    // array of cell indexPaths for cell that are currently selected (checkmark, ready to delete)
     var selectedCellsIndexPaths = [IndexPath]()
+    
     // layout
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
@@ -46,11 +51,14 @@ class AlbumViewController: UIViewController {
         
         // view title
         title = pin.title
+        
+        // show toolbar
+        navigationController?.setToolbarHidden(false, animated: false)
 
         // initialize view in "search" mode..
         activityIndicator.startAnimating()
         activityIndicator.isHidden = false
-    
+        
         // create bbi's
         reloadBbi = UIBarButtonItem(barButtonSystemItem: .refresh,
                                                             target: self,
@@ -69,7 +77,6 @@ class AlbumViewController: UIViewController {
         let predicate = NSPredicate(format: "pin == %@", pin!)
         fetchRequest.predicate = predicate
         fetchRequest.sortDescriptors = [sort]
-        
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
                                                            managedObjectContext: context,
                                                            sectionNameKeyPath: nil,
@@ -78,6 +85,19 @@ class AlbumViewController: UIViewController {
         
         do {
             try fetchedResultsController.performFetch()
+            
+            let progress = downloadProgress()
+            if progress < 1.0 {
+                progressView = UIProgressView(progressViewStyle: .default)
+                progressView?.progress = progress
+                let progBbi = UIBarButtonItem(customView: progressView!)
+                let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+                setToolbarItems([flexBbi, progBbi, flexBbi], animated: false)
+            }
+            else {
+                
+                navigationItem.rightBarButtonItem = editButtonItem
+            }
         } catch {
         }
     }
@@ -111,8 +131,6 @@ class AlbumViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        
-        navigationController?.setToolbarHidden(false, animated: false)
     }
     
     // handle collectionView layout
@@ -130,6 +148,16 @@ class AlbumViewController: UIViewController {
         let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (CELLS_PER_ROW - 1.0) * CELL_SPACING
         flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,
                                      height: widthAvailableForCellsInRow / CELLS_PER_ROW)
+    }
+    
+    override func setEditing(_ editing: Bool, animated: Bool) {
+        super.setEditing(editing, animated: animated)
+        collectionView.reloadData()
+        
+        if editing {
+            let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            setToolbarItems([flexBbi, trashBbi], animated: false)
+        }
     }
 }
 
@@ -149,6 +177,7 @@ extension AlbumViewController: UICollectionViewDataSource {
         guard let section = fetchedResultsController.sections?[section] else {
             return 0
         }
+        
         return section.numberOfObjects
     }
     
@@ -161,6 +190,13 @@ extension AlbumViewController: UICollectionViewDataSource {
         
         let flick = fetchedResultsController.object(at: indexPath)
         
+        if isEditing {
+            cell.imageView.alpha = 0.7
+        }
+        else {
+            cell.imageView.alpha = 1.0
+        }
+        
         // Configure the cell
         cell.imageView.image = UIImage(named: "DefaultCVCellImage")
         cell.activityIndicator.isHidden = false
@@ -169,8 +205,8 @@ extension AlbumViewController: UICollectionViewDataSource {
         // test if cell is selected for deletion
         cell.selectedImageView.isHidden = !selectedCellsIndexPaths.contains(indexPath)
         
+        // test for valid image..has already been downloaded from Flickr
         if let imageData = flick.image {
-            print("GOOD image")
 
             if let image = UIImage(data: imageData as Data) {
                 cell.imageView.image = image
@@ -266,11 +302,6 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         switch type {
         case .insert:
             print("didChange -insert , count: \(String(describing: controller.fetchedObjects?.count))")
-            if !newLoad {
-                print("!!newLoad!!")
-                collectionView.reloadData()
-                newLoad = true
-            }
         case .delete:
             collectionView.reloadData()
             print("didChange -delete , count: \(String(describing: controller.fetchedObjects?.count))")
@@ -278,15 +309,49 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
             print("didChange -move , count: \(String(describing: controller.fetchedObjects?.count))")
         case .update:
             print("didChange -update , count: \(String(describing: controller.fetchedObjects?.count))")
+            collectionView.reloadItems(at: [indexPath!])
         }
     }
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         print("didChangeContent , count: \(String(describing: controller.fetchedObjects?.count))")
+        
+        if let progressView = progressView {
+            let progress = downloadProgress()
+            if progress < 1.0 {
+                progressView.setProgress(progress, animated: true)
+            }
+            else {
+                setToolbarItems(nil, animated: true)
+                self.progressView = nil
+                navigationItem.rightBarButtonItem = editButtonItem
+            }
+        }
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
         
         print("didChange sectionInfo")
+    }
+}
+
+extension AlbumViewController {
+    
+    func downloadProgress() -> Float {
+        
+        let count = Float((fetchedResultsController.fetchedObjects?.count)!)
+        
+        if count == 0.0 {
+            return 0.0
+        }
+        
+        var downloadCount: Float = 0.0
+        for flick in fetchedResultsController.fetchedObjects! {
+            if flick.image != nil {
+                downloadCount = downloadCount + 1.0
+            }
+        }
+        
+        return downloadCount / count
     }
 }
