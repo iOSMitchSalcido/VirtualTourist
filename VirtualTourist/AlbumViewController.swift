@@ -11,13 +11,13 @@ import CoreData
 
 class AlbumViewController: UIViewController {
     
-    // main view objects
+    // view objects
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     // cell presentation contants
     let CELL_SPACING: CGFloat = 2.0     // spacing between cells
-    let CELLS_PER_ROW: CGFloat = 4.0    // number of cells per row.same for both portrait and landscape orientation
+    let CELLS_PER_ROW: CGFloat = 4.0    // number of cells per row, same for both portrait and landscape orientation
 
     // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
@@ -25,14 +25,6 @@ class AlbumViewController: UIViewController {
     
     // ref to Pin
     var pin: Pin!
-    
-    // new Load. Test bool used to initialize collectionView reload only once, after insert is detected
-    var newLoad = false
-    
-    // bbi's
-    var reloadBbi: UIBarButtonItem! // dumps all photo's and replaces with new set of photo's
-    var trashBbi: UIBarButtonItem!  // deletes selected photos
-    var cancelBbi: UIBarButtonItem! // cancel "delete" operation...deselect photos
     
     // progressView..indicate flick download progress
     var progressView: UIProgressView?
@@ -54,21 +46,10 @@ class AlbumViewController: UIViewController {
         
         // show toolbar
         navigationController?.setToolbarHidden(false, animated: false)
-
+        
         // initialize view in "search" mode..
         activityIndicator.startAnimating()
         activityIndicator.isHidden = false
-        
-        // create bbi's
-        reloadBbi = UIBarButtonItem(barButtonSystemItem: .refresh,
-                                                            target: self,
-                                                            action: #selector(reloadBbiPressed(_:)))
-        trashBbi = UIBarButtonItem(barButtonSystemItem: .trash,
-                                   target: self,
-                                   action: #selector(trashBbiPressed(_:)))
-        cancelBbi = UIBarButtonItem(barButtonSystemItem: .cancel,
-                                    target: self,
-                                    action: #selector(cancelBbiPressed(_:)))
         
         
         // Core Data: Request, Sort/Predicate, and Controller
@@ -94,39 +75,8 @@ class AlbumViewController: UIViewController {
                 let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
                 setToolbarItems([flexBbi, progBbi, flexBbi], animated: false)
             }
-            else {
-                
-                navigationItem.rightBarButtonItem = editButtonItem
-            }
         } catch {
         }
-    }
-    
-    func reloadBbiPressed(_ sender: UIBarButtonItem) {
-        
-    }
-    func trashBbiPressed(_ sender: UIBarButtonItem) {
-        
-        for indexPath in  selectedCellsIndexPaths {
-            context.delete(fetchedResultsController.object(at: indexPath))
-        }
-        selectedCellsIndexPaths.removeAll()
-        do {
-            try context.save()
-        } catch {
-            
-        }
-        
-        navigationItem.setLeftBarButton(nil, animated: true)
-        navigationItem.setRightBarButton(reloadBbi, animated: true)
-    }
-    func cancelBbiPressed(_ sender: UIBarButtonItem) {
-        
-        let array = selectedCellsIndexPaths
-        selectedCellsIndexPaths.removeAll()
-        collectionView.reloadItems(at: array)
-        navigationItem.setLeftBarButton(nil, animated: true)
-        navigationItem.setRightBarButton(reloadBbi, animated: true)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -148,16 +98,6 @@ class AlbumViewController: UIViewController {
         let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (CELLS_PER_ROW - 1.0) * CELL_SPACING
         flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,
                                      height: widthAvailableForCellsInRow / CELLS_PER_ROW)
-    }
-    
-    override func setEditing(_ editing: Bool, animated: Bool) {
-        super.setEditing(editing, animated: animated)
-        collectionView.reloadData()
-        
-        if editing {
-            let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-            setToolbarItems([flexBbi, trashBbi], animated: false)
-        }
     }
 }
 
@@ -189,13 +129,6 @@ extension AlbumViewController: UICollectionViewDataSource {
         activityIndicator.isHidden = true
         
         let flick = fetchedResultsController.object(at: indexPath)
-        
-        if isEditing {
-            cell.imageView.alpha = 0.7
-        }
-        else {
-            cell.imageView.alpha = 1.0
-        }
         
         // Configure the cell
         cell.imageView.image = UIImage(named: "DefaultCVCellImage")
@@ -247,47 +180,6 @@ extension AlbumViewController: UICollectionViewDataSource {
 extension AlbumViewController: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        
-        /*
-         Handle placing cell in selection state (checkmark in cell) which provides user visual queue
-         that cell is ready for deletion. Also deselects cell that is currently selected.
-        */
-        
-        // verift image has been downloaded
-        guard fetchedResultsController.object(at: indexPath).image != nil else {
-                return
-        }
-        
-        // retireve cell cast as PhotoCell
-        let cell = collectionView.cellForItem(at: indexPath) as! PhotoCell
-        
-        // test if cell is selected(indexPath will be in selectedCellsIndexPaths array)
-        if let index = selectedCellsIndexPaths.index(of: indexPath) {
-            
-            // cell is selected..proceed to deselect
-            // remove indexPath from array and hide checkmark
-            selectedCellsIndexPaths.remove(at: index)
-            cell.selectedImageView.isHidden = true
-            
-            // test is no selected cells...restore bbi's/UI
-            if selectedCellsIndexPaths.count == 0 {
-                navigationItem.setLeftBarButton(nil, animated: true)
-                navigationItem.setRightBarButton(reloadBbi, animated: true)
-            }
-        }
-        else {
-            
-            // cell is not selected. Proceed with selecting
-            // add indexPath to selectedCellsIndexPaths array, show checkmark
-            selectedCellsIndexPaths.append(indexPath)
-            cell.selectedImageView.isHidden = false
-            
-            // test if a selected cell...update bbi's/UI
-            if selectedCellsIndexPaths.count == 1 {
-                navigationItem.setLeftBarButton(cancelBbi, animated: true)
-                navigationItem.setRightBarButton(trashBbi, animated: true)
-            }
-        }
     }
 }
 
