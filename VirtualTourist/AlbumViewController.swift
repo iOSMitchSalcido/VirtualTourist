@@ -47,10 +47,8 @@ class AlbumViewController: UIViewController {
         // show toolbar
         navigationController?.setToolbarHidden(false, animated: false)
         
-        // initialize view in "search" mode..
         activityIndicator.startAnimating()
         activityIndicator.isHidden = false
-        
         
         // Core Data: Request, Sort/Predicate, and Controller
         let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
@@ -64,23 +62,29 @@ class AlbumViewController: UIViewController {
                                                            cacheName: nil)
         fetchedResultsController.delegate = self
         
+        // perform fetch
         do {
             try fetchedResultsController.performFetch()
             
+            // test for download progress. 1.0 means all photos have already been downloaded...
             let progress = downloadProgress()
             if progress < 1.0 {
+                
+                // download not complete. Add progressView to toolbar to indicate status/progress
+                // of downloading process
                 progressView = UIProgressView(progressViewStyle: .default)
                 progressView?.progress = progress
                 let progBbi = UIBarButtonItem(customView: progressView!)
                 let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
                 setToolbarItems([flexBbi, progBbi, flexBbi], animated: false)
             }
+            else {
+                activityIndicator.stopAnimating()
+                activityIndicator.isHidden = true
+            }
         } catch {
+            //TODO: error handling
         }
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
     }
     
     // handle collectionView layout
@@ -94,7 +98,7 @@ class AlbumViewController: UIViewController {
         flowLayout.minimumLineSpacing = CELL_SPACING
         flowLayout.minimumInteritemSpacing = CELL_SPACING
 
-        // want five flicks/row..four gaps between cells means available space for cells is: screensWidth - 4 * CELL_SPACING
+        // create/set itemSize for cell
         let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (CELLS_PER_ROW - 1.0) * CELL_SPACING
         flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,
                                      height: widthAvailableForCellsInRow / CELLS_PER_ROW)
@@ -124,34 +128,35 @@ extension AlbumViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCellID", for: indexPath) as! PhotoCell
         
-        collectionView.alpha = 1.0
-        activityIndicator.stopAnimating()
-        activityIndicator.isHidden = true
-        
+        // retieve flick
         let flick = fetchedResultsController.object(at: indexPath)
-        
-        // Configure the cell
-        cell.imageView.image = UIImage(named: "DefaultCVCellImage")
-        cell.activityIndicator.isHidden = false
-        cell.activityIndicator.startAnimating()
         
         // test if cell is selected for deletion
         cell.selectedImageView.isHidden = !selectedCellsIndexPaths.contains(indexPath)
         
         // test for valid image..has already been downloaded from Flickr
         if let imageData = flick.image {
-
+            
+            // valid imageData...place image in cell
+            
             if let image = UIImage(data: imageData as Data) {
                 cell.imageView.image = image
                 cell.activityIndicator.isHidden = true
                 cell.activityIndicator.stopAnimating()
             }
         }
+        // imageData not finished downloading..use placeholder image w/activityView
         else if let urlString = flick.urlString,
             let url = URL(string: urlString) {
             
+            cell.imageView.image = UIImage(named: "DefaultCVCellImage")
+            cell.activityIndicator.isHidden = false
+            cell.activityIndicator.startAnimating()
+            
             let networking = Networking()
             networking.dataTaskForURL(url) { (data, error) in
+                
+                //TODO: error handling
                 
                 guard let data = data else {
                     return
@@ -186,7 +191,6 @@ extension AlbumViewController: UICollectionViewDelegate {
 extension AlbumViewController: NSFetchedResultsControllerDelegate {
     
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("willChangeContent , count: \(String(describing: controller.fetchedObjects?.count))")
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
@@ -208,35 +212,56 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         print("didChangeContent , count: \(String(describing: controller.fetchedObjects?.count))")
         
+        /*
+         Handle UI while downloading/editing is happening. Test download progress, set UI elements
+         to indicate status of downloading
+        */
+        
+        // retrieve download progress
+        let progress = downloadProgress()
+        
+        // progress has started.. remove activity indicator which is in center of screen..cells are now beginning
+        // to load. Cells with nil image have placeholder image..
+        if progress > 0.0 {
+            activityIndicator.stopAnimating()
+            activityIndicator.isHidden = true
+        }
+        
+        // update progressView
         if let progressView = progressView {
-            let progress = downloadProgress()
             if progress < 1.0 {
                 progressView.setProgress(progress, animated: true)
             }
             else {
+                // done downloading (progress >= 1.0)
                 setToolbarItems(nil, animated: true)
                 self.progressView = nil
-                navigationItem.rightBarButtonItem = editButtonItem
             }
         }
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
-        
-        print("didChange sectionInfo")
     }
 }
 
+// helper functions
 extension AlbumViewController {
     
+    // return download progress
     func downloadProgress() -> Float {
         
-        let count = Float((fetchedResultsController.fetchedObjects?.count)!)
+        // verify valid objects
+        guard let fetchedObjects = fetchedResultsController.fetchedObjects else {
+            return 0.0
+        }
         
+        // get count, test for zero objects and return 0.0
+        let count = Float(fetchedObjects.count)
         if count == 0.0 {
             return 0.0
         }
         
+        // count non-nil image, sum
         var downloadCount: Float = 0.0
         for flick in fetchedResultsController.fetchedObjects! {
             if flick.image != nil {
@@ -244,6 +269,7 @@ extension AlbumViewController {
             }
         }
         
+        // return ratio
         return downloadCount / count
     }
 }
