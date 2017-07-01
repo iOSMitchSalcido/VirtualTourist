@@ -20,9 +20,16 @@ class AlbumViewController: UIViewController {
     enum AlbumViewingMode {
         case normal         // normal, collectionView is visible
         case editing        // collectionView is visible, but editable (select/delete)
-        case imagePreview   // previewing a image selected in the collectionView
+        case imagePreview   // previewing an image selected in the collectionView
         case downloading    // download in progress
     }
+    
+    // ref to Pin .. set in invoking VC
+    var pin: Pin!
+    
+    // ref to stack, context, and Pin ..set in invoking VC
+    var stack: CoreDataStack!
+    var context: NSManagedObjectContext!
     
     // initialize in normal mode
     var mode: AlbumViewingMode = .normal
@@ -35,17 +42,11 @@ class AlbumViewController: UIViewController {
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!      // ref to CV flowLayout
     @IBOutlet weak var imagePreviewScrollView: UIScrollView!        // scrollView for flick preview
 
-    var progressView: UIProgressView?   // indicate flick download progress
+    // indicate flick download progress. Ref needed to update progress and downloads are in process
+    var progressView: UIProgressView?
 
+    // ref to trashBbi. Ref needed to enable/disable bbi as flicks are selected/deselected
     var trashBbi: UIBarButtonItem!
-    var reloadBbi: UIBarButtonItem!
-    
-    // ref to stack, context, and Pin ..set in invoking VC
-    var stack: CoreDataStack!
-    var context: NSManagedObjectContext!
-    
-    // ref to Pin
-    var pin: Pin!
     
     // NSFetchedResultController
     var fetchedResultsController: NSFetchedResultsController<Flick>!
@@ -66,12 +67,10 @@ class AlbumViewController: UIViewController {
         imagePreviewScrollView.alpha = 0.0
         imagePreviewScrollView.isUserInteractionEnabled = false
         
+        // create trashBbi
         trashBbi = UIBarButtonItem(barButtonSystemItem: .trash,
                                    target: self,
                                    action: #selector(trashBbiPressed(_:)))
-        reloadBbi = UIBarButtonItem(barButtonSystemItem: .refresh,
-                                    target: self,
-                                    action: #selector(reloadBbiPressed(_:)))
         
         // Core Data: Request, Sort/Predicate, and Controller
         let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
@@ -240,7 +239,7 @@ class AlbumViewController: UIViewController {
     }
 }
 
-// MARK: UICollectionViewDataSource
+// MARK: UICollectionView DataSource methods
 extension AlbumViewController: UICollectionViewDataSource {
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -325,6 +324,7 @@ extension AlbumViewController: UICollectionViewDataSource {
     }
 }
 
+// MARK: UICollectionView Delegate methods
 extension AlbumViewController: UICollectionViewDelegate {
     
     // handle cell selection..also deselection
@@ -384,6 +384,7 @@ extension AlbumViewController: UICollectionViewDelegate {
     }
 }
 
+// MARK: NSFetchedResultsController Delegate methods
 extension AlbumViewController: NSFetchedResultsControllerDelegate {
     
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
@@ -537,6 +538,9 @@ extension AlbumViewController {
         
         switch mode {
         case .downloading:
+            /*
+             Downloading mode. VC is currently in the process of downloading flicks.
+             */
             progressView = UIProgressView(progressViewStyle: .default)
             let progressBbi = UIBarButtonItem(customView: progressView!)
             let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
@@ -544,16 +548,26 @@ extension AlbumViewController {
             navigationItem.setRightBarButton(nil, animated: true)
             navigationItem.setLeftBarButton(nil, animated: true)
         case .normal:
-            navigationItem.setLeftBarButton(nil, animated: true)
-            if (fetchedResultsController.fetchedObjects?.count)! > 0 {
+            /*
+             Normal mode. Flicks are presented in collectionView.
+             */
+            if let flicks = fetchedResultsController.fetchedObjects,
+                flicks.count > 0 {
                 navigationItem.setRightBarButton(editButtonItem, animated: true)
             }
             else {
                 navigationItem.setRightBarButton(nil, animated: true)
             }
+            navigationItem.setLeftBarButton(nil, animated: true)
             let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            let reloadBbi = UIBarButtonItem(barButtonSystemItem: .refresh,
+                                            target: self,
+                                            action: #selector(reloadBbiPressed(_:)))
             setToolbarItems([flexBbi, reloadBbi], animated: true)
         case .imagePreview:
+            /*
+             Image Preview. Flicks are presented in a scrollView
+            */
             setToolbarItems(nil, animated: true)
             navigationItem.setLeftBarButton(nil, animated: true)
             
@@ -562,6 +576,9 @@ extension AlbumViewController {
                                            action: #selector(shareFlickBbiPressed(_:)))
             navigationItem.setRightBarButton(shareBbi, animated: true)
         case .editing:
+            /*
+             Editing. VC has been placed in editing mode
+            */
             navigationItem.setLeftBarButton(nil, animated: true)
             let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
             setToolbarItems([flexBbi, trashBbi], animated: true)
