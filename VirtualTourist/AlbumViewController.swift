@@ -52,9 +52,7 @@ class AlbumViewController: UIViewController {
     
     // array of cell indexPaths for cell that are currently selected (checkmark, ready to delete)
     var selectedCellsIndexPaths = [IndexPath]()
-    
-    // layout
-    
+        
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -91,23 +89,20 @@ class AlbumViewController: UIViewController {
         do {
             try fetchedResultsController.performFetch()
             
-            // test for download progress. 1.0 means all photos have already been downloaded...
-            let progress = downloadProgress()
-            if progress < DOWNLOAD_COMPLETE {
+            if let progress = downloadProgress() {
                 
-                // download not complete. Add progressView to toolbar to indicate status/progress
-                // of downloading process
-                mode = .downloading
-                configureBars()
-            }
-            else {
-                mode = .normal
-                configureBars()
-                configureImagePreviewScrollView()
+                if progress < DOWNLOAD_COMPLETE {
+                    mode = .downloading
+                }
+                else {
+                    configureImagePreviewScrollView()
+                }
             }
         } catch {
             //TODO: error handling
         }
+        
+        configureBars()
     }
     
     // handle collectionView layout
@@ -187,6 +182,9 @@ class AlbumViewController: UIViewController {
             
             if fetchedResultsController.fetchedObjects?.count == 0 {
                 setEditing(false, animated: true)
+            }
+            else {
+                trashBbi.isEnabled = false
             }
         } catch {
             //TODO: handle error
@@ -366,10 +364,8 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         */
 
         // test progressView to indicate if downloading
-        if let progressView = progressView {
-            
-            // retrieve download progress
-            let progress = downloadProgress()
+        if let progressView = progressView,
+            let progress = downloadProgress() {
             
             if progress < DOWNLOAD_COMPLETE {
                 // download still in progress (progress < 1.0)
@@ -396,19 +392,17 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
 extension AlbumViewController {
     
     // return download progress 0.0 -> no downloads yet. 1.0 -> downloads complete
-    func downloadProgress() -> Float {
+    func downloadProgress() -> Float? {
         
         // verify valid objects
         guard let fetchedObjects = fetchedResultsController.fetchedObjects else {
-            print("nil fetched objects")
-            return 0.0
+            return nil
         }
         
         // get count, test for zero objects and return 0.0
         let count = Float(fetchedObjects.count)
         if count == 0.0 {
-            print("zero objects")
-            return 0.0
+            return nil
         }
         
         // count non-nil image, sum
