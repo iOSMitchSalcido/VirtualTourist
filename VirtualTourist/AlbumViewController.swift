@@ -89,6 +89,7 @@ class AlbumViewController: UIViewController {
         do {
             try fetchedResultsController.performFetch()
             
+            // test download progress. non-nil indicates download in progress
             if let progress = downloadProgress() {
                 
                 if progress < DOWNLOAD_COMPLETE {
@@ -102,6 +103,7 @@ class AlbumViewController: UIViewController {
             //TODO: error handling
         }
         
+        // configure bars
         configureBars()
     }
     
@@ -122,17 +124,21 @@ class AlbumViewController: UIViewController {
                                      height: widthAvailableForCellsInRow / CELLS_PER_ROW)
     }
     
+    // handle view editing
     override func setEditing(_ editing: Bool, animated: Bool) {
         super.setEditing(editing, animated: animated)
         
         if editing {
+            // editing..set mode to editing
             mode = .editing
         }
         else {
+            // not editing. Set mode to normal and clear selectedCells
             mode = .normal
             selectedCellsIndexPaths.removeAll()
         }
         
+        // update bars, reload
         configureBars()
         collectionView.reloadData()
     }
@@ -150,14 +156,17 @@ class AlbumViewController: UIViewController {
             mode = .normal
             configureBars()
             
+            // UI
             imagePreviewScrollView.isUserInteractionEnabled = false
             collectionView.isUserInteractionEnabled = true
             
+            // remove gr
             if tapGr != nil {
                 view.removeGestureRecognizer(tapGr!)
                 tapGr = nil
             }
             
+            // animate in/out UI
             UIView.animate(withDuration: 0.3) {
                 
                 self.imagePreviewScrollView.alpha = 0.0
@@ -168,22 +177,29 @@ class AlbumViewController: UIViewController {
         }
     }
     
+    // handle trash bbi..delete flicks from collectionView
     func trashBbiPressed(_ sender: UIBarButtonItem) {
         
+        // iterate, delete flick, then clear selectedCells
         for indexPath in selectedCellsIndexPaths {
             let flick = fetchedResultsController.object(at: indexPath)
             context.delete(flick)
         }
         selectedCellsIndexPaths.removeAll()
         
+        // save
         do {
             try context.save()
+            
+            // update scrollView
             configureImagePreviewScrollView()
             
+            // if no flicks, conclude editing
             if fetchedResultsController.fetchedObjects?.count == 0 {
                 setEditing(false, animated: true)
             }
             else {
+                // nothing selected, disable trash
                 trashBbi.isEnabled = false
             }
         } catch {
@@ -282,42 +298,57 @@ extension AlbumViewController: UICollectionViewDataSource {
 
 extension AlbumViewController: UICollectionViewDelegate {
     
+    // handle cell selection..also deselection
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
 
         switch mode {
         case .normal:
             
+            // currently in normal mode. Transition to imagePreview mode
             mode = .imagePreview
             configureBars()
             
+            // UI interaction
             imagePreviewScrollView.isUserInteractionEnabled = true
             collectionView.isUserInteractionEnabled = false
             
+            // add tap gr to detect end of imagePreview mode
             tapGr = UITapGestureRecognizer(target: self,
                                            action: #selector(singleTapDetected(_:)))
             tapGr?.numberOfTapsRequired = 1
             view.addGestureRecognizer(tapGr!)
             
+            // set scroll location to flick/cell selected
             let frame = imagePreviewScrollView.frame
             let xOrg = CGFloat(indexPath.row) * frame.size.width
             let point = CGPoint(x: xOrg, y: 0)
             imagePreviewScrollView.setContentOffset(point, animated: false)
             
+            // animate in/out UI
             UIView.animate(withDuration: 0.3) {
                 
                 self.imagePreviewScrollView.alpha = 1.0
                 self.collectionView.alpha = 0.0
             }
         case .editing:
+            
+            // currently in editing mode. Handle cell selection and deselection (add/remove checkmark)
+            
+            // test selection state. Cell is selected if indexPath is in selectedCellsIndexPaths
             if let index = selectedCellsIndexPaths.index(of: indexPath) {
+                // is selected...remove (deselect)
                 selectedCellsIndexPaths.remove(at: index)
             }
             else {
+                // not selected..select
                 selectedCellsIndexPaths.append(indexPath)
             }
-            collectionView.reloadItems(at: [indexPath])
             
+            // trash enable state
             trashBbi.isEnabled = !selectedCellsIndexPaths.isEmpty
+            
+            // update CV
+            collectionView.reloadItems(at: [indexPath])
         default:
             break
         }
