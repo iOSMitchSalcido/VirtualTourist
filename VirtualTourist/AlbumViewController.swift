@@ -400,12 +400,14 @@ extension AlbumViewController {
         
         // verify valid objects
         guard let fetchedObjects = fetchedResultsController.fetchedObjects else {
+            print("nil fetched objects")
             return 0.0
         }
         
         // get count, test for zero objects and return 0.0
         let count = Float(fetchedObjects.count)
         if count == 0.0 {
+            print("zero objects")
             return 0.0
         }
         
