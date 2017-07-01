@@ -209,6 +209,35 @@ class AlbumViewController: UIViewController {
     func reloadBbiPressed(_ sender: UIBarButtonItem) {
         
     }
+    
+    // handle sharing flick
+    func shareFlickBbiPressed(_ sender: UIBarButtonItem) {
+        
+        /*
+         function to handle sharing a flick. The flick is retrieved from the imagePreviewScrollView
+         and presented in a UIActivityViewVC for sharing.
+        */
+        
+        // determine index of flick in scrollView
+        let offset = imagePreviewScrollView.contentOffset.x
+        let index = Int(offset / imagePreviewScrollView.frame.size.width)
+        
+        // create an indexPath and retrieve flick from frc
+        let indexPath = IndexPath(row: index, section: 0)
+        let flick = fetchedResultsController.object(at: indexPath)
+        
+        // verify good flick...present activityVC. Inculde a message and the flick
+        if let imageData = flick.image as Data?,
+            let image = UIImage(data: imageData) {
+            
+            var message = "Hello"
+            if let title = pin.title {
+                message = message + " from " + title + " !"
+            }
+            let controller = UIActivityViewController(activityItems: [message, image], applicationActivities: nil)
+            present(controller, animated: true)
+        }
+    }
 }
 
 // MARK: UICollectionViewDataSource
@@ -527,7 +556,11 @@ extension AlbumViewController {
         case .imagePreview:
             setToolbarItems(nil, animated: true)
             navigationItem.setLeftBarButton(nil, animated: true)
-            navigationItem.setRightBarButton(nil, animated: true)
+            
+            let shareBbi = UIBarButtonItem(barButtonSystemItem: .action,
+                                           target: self,
+                                           action: #selector(shareFlickBbiPressed(_:)))
+            navigationItem.setRightBarButton(shareBbi, animated: true)
         case .editing:
             navigationItem.setLeftBarButton(nil, animated: true)
             let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
