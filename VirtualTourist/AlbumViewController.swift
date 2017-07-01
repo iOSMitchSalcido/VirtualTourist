@@ -11,23 +11,41 @@ import CoreData
 
 class AlbumViewController: UIViewController {
     
-    // view objects
-    @IBOutlet weak var collectionView: UICollectionView!
-    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
-    
-    // cell presentation contants
+    // constants
     let CELL_SPACING: CGFloat = 2.0     // spacing between cells
     let CELLS_PER_ROW: CGFloat = 4.0    // number of cells per row, same for both portrait and landscape orientation
+    let DOWNLOAD_COMPLETE: Float = 1.0  // constant.. indicates completion of download
+    
+    // view mode..used to test/steer how view is currently presented
+    enum AlbumViewingMode {
+        case normal         // normal, collectionView is visible
+        case editing        // collectionView is visible, but editable (select/delete)
+        case imagePreview   // previewing a image selected in the collectionView
+        case downloading    // download in progress
+    }
+    
+    // initialize in normal mode
+    var mode: AlbumViewingMode = .normal
+    
+    // gr used for dismissing imagePreviewScrollView
+    var tapGr: UITapGestureRecognizer?
+    
+    // view objects
+    @IBOutlet weak var collectionView: UICollectionView!            // collection view showing flicks
+    @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!      // ref to CV flowLayout
+    @IBOutlet weak var imagePreviewScrollView: UIScrollView!        // scrollView for flick preview
 
+    var progressView: UIProgressView?   // indicate flick download progress
+
+    var trashBbi: UIBarButtonItem!
+    var reloadBbi: UIBarButtonItem!
+    
     // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
     var context: NSManagedObjectContext!
     
     // ref to Pin
     var pin: Pin!
-    
-    // progressView..indicate flick download progress
-    var progressView: UIProgressView?
     
     // NSFetchedResultController
     var fetchedResultsController: NSFetchedResultsController<Flick>!
@@ -36,7 +54,6 @@ class AlbumViewController: UIViewController {
     var selectedCellsIndexPaths = [IndexPath]()
     
     // layout
-    @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,8 +64,16 @@ class AlbumViewController: UIViewController {
         // show toolbar
         navigationController?.setToolbarHidden(false, animated: false)
         
-        activityIndicator.startAnimating()
-        activityIndicator.isHidden = false
+        // hide scrollView, disable touch
+        imagePreviewScrollView.alpha = 0.0
+        imagePreviewScrollView.isUserInteractionEnabled = false
+        
+        trashBbi = UIBarButtonItem(barButtonSystemItem: .trash,
+                                   target: self,
+                                   action: #selector(trashBbiPressed(_:)))
+        reloadBbi = UIBarButtonItem(barButtonSystemItem: .refresh,
+                                    target: self,
+                                    action: #selector(reloadBbiPressed(_:)))
         
         // Core Data: Request, Sort/Predicate, and Controller
         let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
@@ -68,19 +93,17 @@ class AlbumViewController: UIViewController {
             
             // test for download progress. 1.0 means all photos have already been downloaded...
             let progress = downloadProgress()
-            if progress < 1.0 {
+            if progress < DOWNLOAD_COMPLETE {
                 
                 // download not complete. Add progressView to toolbar to indicate status/progress
                 // of downloading process
-                progressView = UIProgressView(progressViewStyle: .default)
-                progressView?.progress = progress
-                let progBbi = UIBarButtonItem(customView: progressView!)
-                let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-                setToolbarItems([flexBbi, progBbi, flexBbi], animated: false)
+                mode = .downloading
+                configureBars()
             }
             else {
-                activityIndicator.stopAnimating()
-                activityIndicator.isHidden = true
+                mode = .normal
+                configureBars()
+                configureImagePreviewScrollView()
             }
         } catch {
             //TODO: error handling
@@ -102,6 +125,75 @@ class AlbumViewController: UIViewController {
         let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (CELLS_PER_ROW - 1.0) * CELL_SPACING
         flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,
                                      height: widthAvailableForCellsInRow / CELLS_PER_ROW)
+    }
+    
+    override func setEditing(_ editing: Bool, animated: Bool) {
+        super.setEditing(editing, animated: animated)
+        
+        if editing {
+            mode = .editing
+        }
+        else {
+            mode = .normal
+            selectedCellsIndexPaths.removeAll()
+        }
+        
+        configureBars()
+        collectionView.reloadData()
+    }
+    
+    // handle showing/dismissing imagePreviewScrollView
+    func singleTapDetected(_ sender: UITapGestureRecognizer) {
+        
+        // test mode
+        switch mode {
+        case .imagePreview:
+            
+            // currently in imagePreview mode (scrollView is visible)
+            
+            // ..return to normal mode
+            mode = .normal
+            configureBars()
+            
+            imagePreviewScrollView.isUserInteractionEnabled = false
+            collectionView.isUserInteractionEnabled = true
+            
+            if tapGr != nil {
+                view.removeGestureRecognizer(tapGr!)
+                tapGr = nil
+            }
+            
+            UIView.animate(withDuration: 0.3) {
+                
+                self.imagePreviewScrollView.alpha = 0.0
+                self.collectionView.alpha = 1.0
+            }
+        default:
+            break
+        }
+    }
+    
+    func trashBbiPressed(_ sender: UIBarButtonItem) {
+        
+        for indexPath in selectedCellsIndexPaths {
+            let flick = fetchedResultsController.object(at: indexPath)
+            context.delete(flick)
+        }
+        selectedCellsIndexPaths.removeAll()
+        
+        do {
+            try context.save()
+            configureImagePreviewScrollView()
+            
+            if fetchedResultsController.fetchedObjects?.count == 0 {
+                setEditing(false, animated: true)
+            }
+        } catch {
+            //TODO: handle error
+        }
+    }
+    func reloadBbiPressed(_ sender: UIBarButtonItem) {
+        
     }
 }
 
@@ -133,6 +225,14 @@ extension AlbumViewController: UICollectionViewDataSource {
         
         // test if cell is selected for deletion
         cell.selectedImageView.isHidden = !selectedCellsIndexPaths.contains(indexPath)
+        
+        // test if editing..dim to indicate editing
+        if isEditing {
+            cell.imageView.alpha = 0.6
+        }
+        else {
+            cell.imageView.alpha = 1.0
+        }
         
         // test for valid image..has already been downloaded from Flickr
         if let imageData = flick.image {
@@ -185,6 +285,44 @@ extension AlbumViewController: UICollectionViewDataSource {
 extension AlbumViewController: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+
+        switch mode {
+        case .normal:
+            
+            mode = .imagePreview
+            configureBars()
+            
+            imagePreviewScrollView.isUserInteractionEnabled = true
+            collectionView.isUserInteractionEnabled = false
+            
+            tapGr = UITapGestureRecognizer(target: self,
+                                           action: #selector(singleTapDetected(_:)))
+            tapGr?.numberOfTapsRequired = 1
+            view.addGestureRecognizer(tapGr!)
+            
+            let frame = imagePreviewScrollView.frame
+            let xOrg = CGFloat(indexPath.row) * frame.size.width
+            let point = CGPoint(x: xOrg, y: 0)
+            imagePreviewScrollView.setContentOffset(point, animated: false)
+            
+            UIView.animate(withDuration: 0.3) {
+                
+                self.imagePreviewScrollView.alpha = 1.0
+                self.collectionView.alpha = 0.0
+            }
+        case .editing:
+            if let index = selectedCellsIndexPaths.index(of: indexPath) {
+                selectedCellsIndexPaths.remove(at: index)
+            }
+            else {
+                selectedCellsIndexPaths.append(indexPath)
+            }
+            collectionView.reloadItems(at: [indexPath])
+            
+            trashBbi.isEnabled = !selectedCellsIndexPaths.isEmpty
+        default:
+            break
+        }
     }
 }
 
@@ -205,7 +343,17 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
             print("didChange -move , count: \(String(describing: controller.fetchedObjects?.count))")
         case .update:
             print("didChange -update , count: \(String(describing: controller.fetchedObjects?.count))")
-            collectionView.reloadItems(at: [indexPath!])
+            if let indexPath = indexPath {
+                
+                if let imageData = fetchedResultsController.object(at: indexPath).image as Data?,
+                    let image = UIImage(data: imageData),
+                    let cell = collectionView.cellForItem(at: indexPath) as? PhotoCell{
+                    
+                    cell.imageView.image = image
+                    cell.activityIndicator.stopAnimating()
+                    cell.activityIndicator.isHidden = true
+                }
+            }
         }
     }
     
@@ -213,29 +361,29 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         print("didChangeContent , count: \(String(describing: controller.fetchedObjects?.count))")
         
         /*
-         Handle UI while downloading/editing is happening. Test download progress, set UI elements
-         to indicate status of downloading
+         Handle UI while downloading. Test download progress, set UI elements
+         to indicate status of downloading when complete
         */
-        
-        // retrieve download progress
-        let progress = downloadProgress()
-        
-        // progress has started.. remove activity indicator which is in center of screen..cells are now beginning
-        // to load. Cells with nil image have placeholder image..
-        if progress > 0.0 {
-            activityIndicator.stopAnimating()
-            activityIndicator.isHidden = true
-        }
-        
-        // update progressView
+
+        // test progressView to indicate if downloading
         if let progressView = progressView {
-            if progress < 1.0 {
+            
+            // retrieve download progress
+            let progress = downloadProgress()
+            
+            if progress < DOWNLOAD_COMPLETE {
+                // download still in progress (progress < 1.0)
                 progressView.setProgress(progress, animated: true)
             }
             else {
-                // done downloading (progress >= 1.0)
-                setToolbarItems(nil, animated: true)
-                self.progressView = nil
+                // done downloading (progress >= 1.0
+                
+                // mode
+                mode = .normal
+                configureBars()
+                
+                // config scrollView with images
+                configureImagePreviewScrollView()
             }
         }
     }
@@ -247,7 +395,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
 // helper functions
 extension AlbumViewController {
     
-    // return download progress
+    // return download progress 0.0 -> no downloads yet. 1.0 -> downloads complete
     func downloadProgress() -> Float {
         
         // verify valid objects
@@ -271,5 +419,93 @@ extension AlbumViewController {
         
         // return ratio
         return downloadCount / count
+    }
+    
+    // load scrollView
+    func configureImagePreviewScrollView() {
+        
+        // test for objects
+        guard let flicks = fetchedResultsController.fetchedObjects else {
+            return
+        }
+        
+        // remove all imageViews in scrollView
+        // tag is set when creating imageView..used to id the view in scrollView
+        let imageViews = imagePreviewScrollView.subviews
+        for view in imageViews {
+            if view.tag >= 100 {
+                view.removeFromSuperview()
+            }
+        }
+        
+        // populate scrollView. Accumulate size (content size) while populating
+        
+        // imageView frame will be same size as scrollView frame
+        var frame = imagePreviewScrollView.frame
+        frame.origin.x = 0
+        frame.origin.y = 0
+        
+        // size for contentSize...will accumulate width as views are created/added
+        var size = CGSize(width: 0.0, height: frame.height)
+        
+        // id imageViews in scrollView
+        var tag: Int = 100
+        
+        // iterate thru flicks
+        for flick in flicks {
+            
+            // verift valid image data and good image
+            if let imageData = flick.image as Data?,
+                let image = UIImage(data: imageData) {
+                
+                // create imageView
+                let imageView = UIImageView(frame: frame)
+                imageView.image = image
+                imageView.contentMode = .scaleToFill
+                imageView.tag = tag
+                tag = tag + 1
+                size.width = size.width + frame.size.width
+                frame.origin.x = frame.origin.x + frame.size.width
+                imagePreviewScrollView.addSubview(imageView)
+            }
+        }
+        
+        // set content size
+        imagePreviewScrollView.contentSize = size
+    }
+    
+    // configure bbi's on nav/tool bar
+    func configureBars() {
+        
+        progressView = nil
+        
+        switch mode {
+        case .downloading:
+            progressView = UIProgressView(progressViewStyle: .default)
+            let progressBbi = UIBarButtonItem(customView: progressView!)
+            let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            setToolbarItems([flexBbi, progressBbi, flexBbi], animated: true)
+            navigationItem.setRightBarButton(nil, animated: true)
+            navigationItem.setLeftBarButton(nil, animated: true)
+        case .normal:
+            navigationItem.setLeftBarButton(nil, animated: true)
+            if (fetchedResultsController.fetchedObjects?.count)! > 0 {
+                navigationItem.setRightBarButton(editButtonItem, animated: true)
+            }
+            else {
+                navigationItem.setRightBarButton(nil, animated: true)
+            }
+            let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            setToolbarItems([flexBbi, reloadBbi], animated: true)
+        case .imagePreview:
+            setToolbarItems(nil, animated: true)
+            navigationItem.setLeftBarButton(nil, animated: true)
+            navigationItem.setRightBarButton(nil, animated: true)
+        case .editing:
+            navigationItem.setLeftBarButton(nil, animated: true)
+            let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            setToolbarItems([flexBbi, trashBbi], animated: true)
+            trashBbi.isEnabled = false
+        }
     }
 }

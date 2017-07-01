@@ -280,12 +280,6 @@ extension MapViewController: MKMapViewDelegate {
         }
         // right accessory. Navigate to AlbumVC
         else if control == view.rightCalloutAccessoryView {
-            
-            if pin.flicks?.count == 0 {
-                let flickr = FlickrAPI()
-                flickr.createFlickrAlbumForPin(pin, withContainer: stack.container)
-            }
-            
             performSegue(withIdentifier: "AlbumSegueID", sender: pin)
         }
     }
