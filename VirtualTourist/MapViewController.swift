@@ -15,12 +15,23 @@ import CoreData
 
 class MapViewController: UIViewController {
 
+    // constants
+    let USER_LOCATION_KmACCURACY: CLLocationAccuracy = 5.0  // user location, Km accuracy
+    let USER_SPAN_DEGREES: CLLocationDegrees = 0.3          // user location span
+    
+    // view objects
     @IBOutlet weak var mapView: MKMapView!  // ref to mapView
     
+    // CoreData
     var stack: CoreDataStack!               // ref to CoreDataStack
     var context: NSManagedObjectContext!    // ref to managedObjectContext
     
-    // core data stack
+    // ref to search bbi
+    var searchBbi: UIBarButtonItem!
+    
+    // location manager
+    var locationManager: CLLocationManager!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -28,13 +39,29 @@ class MapViewController: UIViewController {
         stack = CoreDataStack("VirtualTouristModel")
         context = stack.context
         
+        // core location. Determine auth..request auth
+        // .. searchBbi creation is handled in coreLocation delegate
+        let coreLocationAuthStatus = CLLocationManager.authorizationStatus()
+        locationManager = CLLocationManager()
+        locationManager.desiredAccuracy = kCLLocationAccuracyKilometer * USER_LOCATION_KmACCURACY
+        locationManager.distanceFilter = kCLLocationAccuracyKilometer * USER_LOCATION_KmACCURACY
+        locationManager.delegate = self
+
+        // test location auth status
+        switch coreLocationAuthStatus {
+        case .notDetermined:
+            // not determined...request auth
+            locationManager.requestWhenInUseAuthorization()
+        default:
+            break
+        }
+        
         /*
          do a fetch to populate map with pins. Create a fetch request and an empty annotations array.
          Iterate through fetch results using attribs to populate properties in MKPoint annotation.
          This annotation is then added to the annotations array, which is then added to the
          mapView annotations
         */
-        
         
         let flickFr: NSFetchRequest<Flick> = Flick.fetchRequest()
         do {
@@ -46,7 +73,7 @@ class MapViewController: UIViewController {
                 }
             }
         } catch {
-            
+            //TODO: error handling
         }
         
         // array to hold annotations
@@ -75,7 +102,7 @@ class MapViewController: UIViewController {
                 }
             }
         } catch {
-            print("unable to fetch Pins")
+            //TODO: error handling
         }
         
         // add annotations to mapView
@@ -177,7 +204,7 @@ class MapViewController: UIViewController {
                     let flickr = FlickrAPI()
                     flickr.createFlickrAlbumForAnnot(annot, withContainer: self.stack.container)
                 } catch {
-                    
+                    //TODO: error handling
                 }
             }
         default:
@@ -185,11 +212,19 @@ class MapViewController: UIViewController {
         }
     }
     
+    func searchBbiPressed(_ sender: UIBarButtonItem) {
+        
+        // Request a location
+        locationManager.requestLocation()
+    }
+    
+    // handle segue prep
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         guard segue.identifier == "AlbumSegueID" else {
             return
         }
+        // set pin and core data in destination controller
         let controller = segue.destination as! AlbumViewController
         controller.stack = stack
         controller.context = context
@@ -273,6 +308,7 @@ extension MapViewController: MKMapViewDelegate {
                         }
                         print("delete Pin MapView - good save")
                     } catch {
+                        //TODO: error handling
                         print("delete Pin MapView - unable to save private context")
                     }
                 }
@@ -281,6 +317,48 @@ extension MapViewController: MKMapViewDelegate {
         // right accessory. Navigate to AlbumVC
         else if control == view.rightCalloutAccessoryView {
             performSegue(withIdentifier: "AlbumSegueID", sender: pin)
+        }
+    }
+}
+
+extension MapViewController: CLLocationManagerDelegate {
+    
+    // handle user location update
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        
+        // test for valid location
+        guard let location = locations.last else {
+            return
+        }
+        
+        // zoom in to user location
+        let coordinate = location.coordinate
+        let span = MKCoordinateSpan(latitudeDelta: USER_SPAN_DEGREES,
+                                    longitudeDelta: USER_SPAN_DEGREES)
+        let region = MKCoordinateRegion(center: coordinate, span: span)
+        mapView.setRegion(region, animated: true)
+    }
+    
+    // user location error
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        
+        // location error. Show alert
+        presentAlertForError(VTError.locationError("User location search failure."))
+    }
+    
+    // handle CL auth
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        
+        // test status
+        switch status {
+        case .authorizedWhenInUse:
+            // search bbi..used to zoom in to user location
+            searchBbi = UIBarButtonItem(barButtonSystemItem: .search,
+                                        target: self,
+                                        action: #selector(searchBbiPressed(_:)))
+            navigationItem.rightBarButtonItem = searchBbi
+        default:
+            break
         }
     }
 }
