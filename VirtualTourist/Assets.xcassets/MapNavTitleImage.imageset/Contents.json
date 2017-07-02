@@ -2,17 +2,17 @@
   "images" : [
     {
       "idiom" : "universal",
-      "filename" : "ImagePreviewPlaceholder.png",
+      "filename" : "MapNavTitleImage.png",
       "scale" : "1x"
     },
     {
       "idiom" : "universal",
-      "filename" : "ImagePreviewPlaceholder@2x.png",
+      "filename" : "MapNavTitleImage@2x.png",
       "scale" : "2x"
     },
     {
       "idiom" : "universal",
-      "filename" : "ImagePreviewPlaceholder@3x.png",
+      "filename" : "MapNavTitleImage@3x.png",
       "scale" : "3x"
     }
   ],

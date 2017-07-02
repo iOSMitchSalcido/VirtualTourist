@@ -20,7 +20,8 @@ class MapViewController: UIViewController {
     let USER_SPAN_DEGREES: CLLocationDegrees = 0.3          // user location span
     
     // view objects
-    @IBOutlet weak var mapView: MKMapView!  // ref to mapView
+    @IBOutlet weak var mapView: MKMapView!          // ref to mapView
+    @IBOutlet weak var titleImageView: UIImageView! // ref to nav titleImageView
     
     // CoreData
     var stack: CoreDataStack!               // ref to CoreDataStack
@@ -109,6 +110,12 @@ class MapViewController: UIViewController {
         mapView.addAnnotations(annotations)
     }
     
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        
+        print("title: \(titleImageView.frame)")
+        titleImageView.image = UIImage(named: "MapNavTitleImage")
+    }
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
