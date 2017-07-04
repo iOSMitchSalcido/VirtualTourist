@@ -127,6 +127,10 @@ class AlbumViewController: UIViewController {
                                      height: widthAvailableForCellsInRow / CELLS_PER_ROW)
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        fetchedResultsController = nil
+    }
+    
     // handle view editing
     override func setEditing(_ editing: Bool, animated: Bool) {
         super.setEditing(editing, animated: animated)
