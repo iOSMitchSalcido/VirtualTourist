@@ -127,10 +127,6 @@ class AlbumViewController: UIViewController {
                                      height: widthAvailableForCellsInRow / CELLS_PER_ROW)
     }
     
-    override func viewWillDisappear(_ animated: Bool) {
-        fetchedResultsController = nil
-    }
-    
     // handle view editing
     override func setEditing(_ editing: Bool, animated: Bool) {
         super.setEditing(editing, animated: animated)
@@ -469,6 +465,12 @@ extension AlbumViewController {
             return nil
         }
         
+        // get count, test for zero objects and return 0.0
+        let count = Float(fetchedObjects.count)
+        if count == 0 {
+            return nil
+        }
+        
         // count non-nil image, sum
         var downloadCount: Float = 0.0
         for flick in fetchedResultsController.fetchedObjects! {
@@ -476,13 +478,7 @@ extension AlbumViewController {
                 downloadCount = downloadCount + 1.0
             }
         }
-        
-        // get count, test for zero objects and return 0.0
-        let count = Float(fetchedObjects.count)
-        if count == 0 {
-            return 0
-        }
-        
+
         // return ratio
         return downloadCount / count
     }

@@ -62,7 +62,7 @@ struct FlickrAPI {
     func createFlickrAlbumForPin(_ pin: Pin, withContainer container: NSPersistentContainer) {
         
         container.performBackgroundTask() { (privateContext) in
-            //privateContext.mergePolicy = NSMergePolicy.overwrite
+            privateContext.mergePolicy = NSMergePolicy.overwrite
 
             // Begin Flickr image search
             let lon = Double(pin.coordinate!.longitude)
@@ -142,7 +142,7 @@ struct FlickrAPI {
     func createFlickrAlbumForAnnot(_ annot: VTAnnotation, withContainer container: NSPersistentContainer) {
         
         container.performBackgroundTask() { (privateContext) in
-            //privateContext.mergePolicy = NSMergePolicy.overwrite
+            privateContext.mergePolicy = NSMergePolicy.overwrite
             
             let pin = annot.pin!
             
