@@ -134,6 +134,7 @@ class MapViewController: UIViewController {
         
         switch sender.state {
         case .began:
+            print("longPressBegan")
             // begin long press detection
             
             // get touch point and coord in mapView
@@ -145,6 +146,12 @@ class MapViewController: UIViewController {
             let geoCoder = CLGeocoder()
             geoCoder.reverseGeocodeLocation(location) {
                 (placemarks, error) in
+                
+                print("geoCoder completion")
+                
+                if error != nil {
+                    print("geocode error")
+                }
                 
                 // test for geocode errors...look at most pertinent errors
                 if let error = error as? CLError.Code {
@@ -163,11 +170,15 @@ class MapViewController: UIViewController {
                     return
                 }
                 
+                print("no geocode error")
+                
                 // test for valid placemark found in reverse geocoding
                 guard let placemark = placemarks?.first else {
                     self.presentAlertForError(VTError.locationError("Geocoding error. Possible network issue or offline"))
                     return
                 }
+                
+                print("good placemark")
                 
                 // valid placemark info.. continue and create an annot for mapView
                 
@@ -212,6 +223,7 @@ class MapViewController: UIViewController {
                     flickr.createFlickrAlbumForAnnot(annot, withContainer: self.stack.container)
                 } catch {
                     //TODO: error handling
+                    print("bad context save during new Pin creation")
                 }
             }
         default:
@@ -302,6 +314,7 @@ extension MapViewController: MKMapViewDelegate {
                 annotation.pin = nil
 
                 self.stack.container.performBackgroundTask() { (privateContext) in
+                    privateContext.mergePolicy = NSMergePolicy.overwrite
                     
                     let privatePin = privateContext.object(with: pin.objectID) as! Pin
                     privateContext.delete(privatePin)
@@ -310,13 +323,10 @@ extension MapViewController: MKMapViewDelegate {
                         if privateContext.hasChanges {
                             try privateContext.save()
                         }
-                        if self.context.hasChanges {
-                            try self.context.save()
-                        }
-                        print("delete Pin MapView - good save")
+                        print("delete Pin MapView - good save 😇😇😇")
                     } catch {
                         //TODO: error handling
-                        print("delete Pin MapView - unable to save private context")
+                        print("delete Pin MapView - bad save 😡😡😡")
                     }
                 }
             }

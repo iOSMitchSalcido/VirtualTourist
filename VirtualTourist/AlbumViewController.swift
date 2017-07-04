@@ -98,8 +98,12 @@ class AlbumViewController: UIViewController {
                     configureImagePreviewScrollView()
                 }
             }
+            else {
+                print("nil progress **")
+            }
         } catch {
             //TODO: error handling
+            print("unable to fetch pin")
         }
         
         // configure bars
@@ -457,6 +461,7 @@ extension AlbumViewController {
         
         // verify valid objects
         guard let fetchedObjects = fetchedResultsController.fetchedObjects else {
+            print("nil fetchedObjects")
             return nil
         }
         

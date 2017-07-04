@@ -17,7 +17,7 @@ class CoreDataStack {
         container = NSPersistentContainer(name: modelName)
         container.loadPersistentStores() {
             (description, error) in
-            self.container.viewContext.automaticallyMergesChangesFromParent = true
+            self.container.viewContext.mergePolicy = NSMergePolicy.overwrite
         }
     }
     

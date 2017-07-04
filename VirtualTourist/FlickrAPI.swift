@@ -62,7 +62,8 @@ struct FlickrAPI {
     func createFlickrAlbumForPin(_ pin: Pin, withContainer container: NSPersistentContainer) {
         
         container.performBackgroundTask() { (privateContext) in
-            
+            //privateContext.mergePolicy = NSMergePolicy.overwrite
+
             // Begin Flickr image search
             let lon = Double(pin.coordinate!.longitude)
             let lat = Double(pin.coordinate!.latitude)
@@ -141,6 +142,7 @@ struct FlickrAPI {
     func createFlickrAlbumForAnnot(_ annot: VTAnnotation, withContainer container: NSPersistentContainer) {
         
         container.performBackgroundTask() { (privateContext) in
+            //privateContext.mergePolicy = NSMergePolicy.overwrite
             
             let pin = annot.pin!
             
@@ -208,8 +210,9 @@ struct FlickrAPI {
                                 do {
                                     try privateContext.save()
                                     print("imageData - good save")
-                                } catch {
+                                } catch let error {
                                     print("imageData - unable to save private context")
+                                    print(error.localizedDescription)
                                 }
                             }
                             else {
