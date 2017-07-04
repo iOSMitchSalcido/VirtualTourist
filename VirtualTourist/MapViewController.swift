@@ -36,6 +36,9 @@ class MapViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // titleView
+        titleImageView.image = UIImage(named: "MapNavTitleImage")
+
         // retrieve stack/context
         stack = CoreDataStack("VirtualTouristModel")
         context = stack.context
@@ -109,13 +112,7 @@ class MapViewController: UIViewController {
         // add annotations to mapView
         mapView.addAnnotations(annotations)
     }
-    
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
-        
-        print("title: \(titleImageView.frame)")
-        titleImageView.image = UIImage(named: "MapNavTitleImage")
-    }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
