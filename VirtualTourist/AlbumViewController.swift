@@ -469,18 +469,18 @@ extension AlbumViewController {
             return nil
         }
         
-        // get count, test for zero objects and return 0.0
-        let count = Float(fetchedObjects.count)
-        if count == 0.0 {
-            return nil
-        }
-        
         // count non-nil image, sum
         var downloadCount: Float = 0.0
         for flick in fetchedResultsController.fetchedObjects! {
             if flick.image != nil {
                 downloadCount = downloadCount + 1.0
             }
+        }
+        
+        // get count, test for zero objects and return 0.0
+        let count = Float(fetchedObjects.count)
+        if count == 0 {
+            return 0
         }
         
         // return ratio
