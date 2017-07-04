@@ -119,9 +119,9 @@ struct FlickrAPI {
                                 flick.image = data
                                 do {
                                     try privateContext.save()
-                                    print("imageData - good save")
+                                    print("\(String(describing: pin.title)) | imageData - good save")
                                 } catch {
-                                    print("imageData - unable to save private context")
+                                    print("\(String(describing: pin.title)) | imageData - unable to save private context")
                                 }
                             }
                             else {
@@ -209,9 +209,9 @@ struct FlickrAPI {
                                 flick.image = data
                                 do {
                                     try privateContext.save()
-                                    print("imageData - good save")
+                                    print("\(String(describing: annot.pin?.title)) | imageData - good save")
                                 } catch let error {
-                                    print("imageData - unable to save private context")
+                                    print("\(String(describing: annot.pin?.title)) | imageData - unable to save private context")
                                     print(error.localizedDescription)
                                 }
                             }
