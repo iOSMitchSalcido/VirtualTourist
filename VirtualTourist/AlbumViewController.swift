@@ -90,6 +90,7 @@ class AlbumViewController: UIViewController {
             
             // test download progress. non-nil indicates download in progress
             if let progress = downloadProgress() {
+                print("non-nil download progress")
                 
                 if progress < DOWNLOAD_COMPLETE {
                     mode = .downloading
