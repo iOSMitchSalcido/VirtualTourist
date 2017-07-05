@@ -59,6 +59,7 @@ struct FlickrAPI {
         networking.dataTaskForParameters(params as [String : AnyObject], completion: completion)
     }
     
+    // create a flickr album
     func createFlickrAlbumForPin(_ pin: Pin, withContainer container: NSPersistentContainer) {
         
         container.performBackgroundTask() { (privateContext) in
@@ -136,9 +137,7 @@ struct FlickrAPI {
         }
     }
     
-    
-    
-    
+    // create a flickr album
     func createFlickrAlbumForAnnot(_ annot: VTAnnotation, withContainer container: NSPersistentContainer) {
         
         container.performBackgroundTask() { (privateContext) in
@@ -187,16 +186,15 @@ struct FlickrAPI {
                 do {
                     try privateContext.save()
                     print("urlStrings - good save")
-                    
-                    /*
-                     Suspect Pin deleting issue is here..
-                     When deleting Pin who's flicks are still being downloaded, sometimes get a bad save
-                     ..some type of "collision" taking place in the way I'm performing background tasks
-                     */
+
+                    // get array of flicks
                     if let flicks = privatePin.flicks?.array as? [Flick] {
                         
+                        // iterate through flicks to add image data
                         for flick in flicks {
                             
+                            // only proceed to add image data in pin is non-nil
+                            // ...might have been deleted while still downloading flicks
                             if annot.pin != nil,
                                 let urlString = flick.urlString,
                                 let url = URL(string: urlString),
