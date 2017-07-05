@@ -17,6 +17,8 @@ class CoreDataStack {
         container = NSPersistentContainer(name: modelName)
         container.loadPersistentStores() {
             (description, error) in
+            
+            // !! inconsistant Pin deletion unless merge policy is set
             self.container.viewContext.mergePolicy = NSMergePolicy.overwrite
         }
     }

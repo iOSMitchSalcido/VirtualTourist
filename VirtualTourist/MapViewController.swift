@@ -311,6 +311,8 @@ extension MapViewController: MKMapViewDelegate {
                 annotation.pin = nil
 
                 self.stack.container.performBackgroundTask() { (privateContext) in
+                    
+                    // !! inconsistant Pin deletion unless merge policy is set
                     privateContext.mergePolicy = NSMergePolicy.overwrite
                     
                     let privatePin = privateContext.object(with: pin.objectID) as! Pin
