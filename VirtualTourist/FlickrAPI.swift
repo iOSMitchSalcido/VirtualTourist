@@ -205,11 +205,18 @@ struct FlickrAPI {
                                 }
                                 
                                 flick.image = data
+                                
+                                var locationTitle = "Location"
+                                if let pinTitle = annot.pin?.title {
+                                    locationTitle = pinTitle
+                                }
+                                
                                 do {
                                     try privateContext.save()
-                                    print("\(String(describing: annot.pin?.title)) | imageData - good save")
+                                    print("\(locationTitle) | imageData - good save")
+                                    try container.viewContext.save()
                                 } catch let error {
-                                    print("\(String(describing: annot.pin?.title)) | imageData - unable to save private context")
+                                    print("\(locationTitle) | imageData - unable to save private context")
                                     print(error.localizedDescription)
                                 }
                             }

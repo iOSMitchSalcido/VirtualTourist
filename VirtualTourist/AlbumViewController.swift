@@ -299,9 +299,11 @@ extension AlbumViewController: UICollectionViewDataSource {
             cell.imageView.image = UIImage(named: "DefaultCVCellImage")
             cell.activityIndicator.isHidden = false
             cell.activityIndicator.startAnimating()
-            
+
             let networking = Networking()
             networking.dataTaskForURL(url) { (data, error) in
+                
+                print("!!! ANOTTHER TASK !!! !!! NOT NEEDED !!")
                 
                 //TODO: error handling
                 
