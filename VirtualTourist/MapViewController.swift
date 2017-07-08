@@ -269,34 +269,6 @@ class MapViewController: UIViewController {
                                 }
                             } catch {
                             }
-                            
-                            /*
-                            for urlString in data {
-                                
-                                if let url = URL(string: urlString),
-                                    let imageData = NSData(contentsOf: url) {
-                                    
-                                    let flick = Flick(context: privateContext)
-                                    flick.urlString = urlString
-                                    flick.image = imageData
-                                    pin.addToFlicks(flick)
-                                    
-                                    do {
-                                        try privateContext.save()
-                                        
-                                        self.context.performAndWait {
-                                            do {
-                                                try self.context.save()
-                                            } catch {
-                                                
-                                            }
-                                        }
-                                    } catch {
-                                        
-                                    }
-                                }
-                            }
- */
                         }
                     }
                 } catch {

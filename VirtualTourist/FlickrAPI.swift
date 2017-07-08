@@ -11,6 +11,7 @@
 
 import Foundation
 import CoreData
+import MapKit
 
 struct FlickrAPI {
     
@@ -333,6 +334,10 @@ extension FlickrAPI {
         static let safeSearch = "1"
         static let title = "title"
         static let radius10K = "10"
+        
+        // keys to returned data
+        static let photosDictionary = "photos"
+        static let photosArray = "photo"
     }
     
     // subcomponents used to form URL
@@ -345,5 +350,77 @@ extension FlickrAPI {
     // methods
     fileprivate struct Methods {
         static let photosSearch = "flickr.photos.search"
+    }
+}
+
+extension FlickrAPI {
+    
+    // create a flickr album
+    func createFlickrAlbumForPin(_ pin: Pin,
+                                 completion: @escaping ([String]?, VTError?) -> Void) {
+        
+        guard let longitude = pin.coordinate?.longitude,
+            let latitude = pin.coordinate?.latitude else {
+                return
+        }
+        
+        let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+        self.flicksSearchInCoordinate(coordinate) {
+            (data, error) in
+            
+            guard error == nil else {
+                completion(nil, VTError.locationError("Error search for flicks"))
+                return
+            }
+            
+            guard let data = data else {
+                completion(nil, VTError.networkError("Bad data returned from Flickr"))
+                return
+            }
+            
+            guard let photosDict = data[FlickrAPI.Values.photosDictionary] as? [String: AnyObject],
+                let photosArray = photosDict[FlickrAPI.Values.photosArray] as? [[String: AnyObject]] else {
+                    completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
+                    return
+            }
+            
+            var urlStrings = [String]()
+            for photos in photosArray {
+                if let urlString = photos[FlickrAPI.Values.mediumURL] as? String,
+                    urlStrings.count <  self.MAX_IMAGES {
+                    urlStrings.append(urlString)
+                }
+            }
+            
+            completion(urlStrings, nil)
+        }
+    }
+    
+    // search flicks for photos. Options for geography and text search
+    fileprivate func flicksSearchInCoordinate(_ coordinate: CLLocationCoordinate2D,
+                                  completion: @escaping ([String: AnyObject]?, VTError?) -> Void) {
+        
+        // base params..will ultimately be pulled as queryItems in url creation...
+        var items = ["method": FlickrAPI.Methods.photosSearch,
+                     FlickrAPI.Keys.apiKey: FlickrAPI.Values.apiKey,
+                     FlickrAPI.Keys.format: FlickrAPI.Values.json,
+                     FlickrAPI.Keys.extras: FlickrAPI.Values.mediumURL,
+                     FlickrAPI.Keys.nojsoncallback: FlickrAPI.Values.nojsoncallback,
+                     FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch]
+        
+        // params for geo search
+        items[FlickrAPI.Keys.longitude] = "\(coordinate.longitude)"
+        items[FlickrAPI.Keys.latitude] = "\(coordinate.longitude)"
+        items[FlickrAPI.Keys.radius] = "\(self.SEARCH_RADIUS)"
+        
+        // params for task
+        let params = [Networking.Keys.items: items,
+                      Networking.Keys.host: FlickrAPI.Subcomponents.host,
+                      Networking.Keys.scheme: FlickrAPI.Subcomponents.scheme,
+                      Networking.Keys.path: FlickrAPI.Subcomponents.path] as [String : Any]
+        
+        // execute task
+        let networking = Networking()
+        networking.dataTaskForParameters(params as [String : AnyObject], completion: completion)
     }
 }

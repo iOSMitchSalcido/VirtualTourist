@@ -298,42 +298,6 @@ extension AlbumViewController: UICollectionViewDataSource {
             cell.activityIndicator.isHidden = false
             cell.activityIndicator.startAnimating()
         }
-            /*
-        // imageData not finished downloading..use placeholder image w/activityView
-        else if let urlString = flick.urlString,
-            let url = URL(string: urlString) {
-            
-            cell.imageView.image = UIImage(named: "DefaultCVCellImage")
-            cell.activityIndicator.isHidden = false
-            cell.activityIndicator.startAnimating()
-
-            let networking = Networking()
-            networking.dataTaskForURL(url) { (data, error) in
-                
-                print("!!! ANOTTHER TASK !!! !!! NOT NEEDED !!")
-                
-                //TODO: error handling
-                
-                guard let data = data else {
-                    return
-                }
-                
-                flick.image = data as NSData
-                
-                do {
-                    try self.context.save()
-                } catch {
-                    
-                }
-                
-                DispatchQueue.main.async {
-                    cell.imageView.image = UIImage(data: data)
-                    cell.activityIndicator.isHidden = true
-                    cell.activityIndicator.stopAnimating()
-                }
-            }
-        }
-         */
         return cell
     }
 }
