@@ -207,11 +207,23 @@ class MapViewController: UIViewController {
                     }
                     
                     let flickr = FlickrAPI()
-                    flickr.createFlickrAlbumForAnnotTest2(annot, withContainer: self.stack.container) {
-                        (data) in
+                    flickr.createFlickrAlbumForPinZ(newPin) {
+                        (data, error) in
+                        
+                        guard error == nil else {
+                            print(error!)
+                            return
+                        }
+                        
+                        guard let data = data else {
+                            print("bad array")
+                            return
+                        }
                         
                         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
                         privateContext.parent = self.context
+                        
+                        print("good array")
                         
                         privateContext.perform {
                             

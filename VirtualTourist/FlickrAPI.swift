@@ -356,11 +356,12 @@ extension FlickrAPI {
 extension FlickrAPI {
     
     // create a flickr album
-    func createFlickrAlbumForPin(_ pin: Pin,
+    func createFlickrAlbumForPinZ(_ pin: Pin,
                                  completion: @escaping ([String]?, VTError?) -> Void) {
         
         guard let longitude = pin.coordinate?.longitude,
             let latitude = pin.coordinate?.latitude else {
+                completion(nil, VTError.operatorError("Bad Pin/Location"))
                 return
         }
         
@@ -378,16 +379,18 @@ extension FlickrAPI {
                 return
             }
             
-            guard let photosDict = data[FlickrAPI.Values.photosDictionary] as? [String: AnyObject],
-                let photosArray = photosDict[FlickrAPI.Values.photosArray] as? [[String: AnyObject]] else {
+            print(data)
+            
+            guard let photosDict = data["photos"] as? [String: AnyObject],
+                let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
                     completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
                     return
             }
             
             var urlStrings = [String]()
             for photos in photosArray {
-                if let urlString = photos[FlickrAPI.Values.mediumURL] as? String,
-                    urlStrings.count <  self.MAX_IMAGES {
+                if let urlString = photos["url_m"] as? String,
+                    urlStrings.count < self.MAX_IMAGES {
                     urlStrings.append(urlString)
                 }
             }
@@ -408,9 +411,12 @@ extension FlickrAPI {
                      FlickrAPI.Keys.nojsoncallback: FlickrAPI.Values.nojsoncallback,
                      FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch]
         
+        print(coordinate.longitude)
+        print(coordinate.latitude)
+        
         // params for geo search
         items[FlickrAPI.Keys.longitude] = "\(coordinate.longitude)"
-        items[FlickrAPI.Keys.latitude] = "\(coordinate.longitude)"
+        items[FlickrAPI.Keys.latitude] = "\(coordinate.latitude)"
         items[FlickrAPI.Keys.radius] = "\(self.SEARCH_RADIUS)"
         
         // params for task
