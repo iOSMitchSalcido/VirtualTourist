@@ -292,6 +292,13 @@ extension AlbumViewController: UICollectionViewDataSource {
                 cell.activityIndicator.stopAnimating()
             }
         }
+        else {
+         
+            cell.imageView.image = UIImage(named: "DefaultCVCellImage")
+            cell.activityIndicator.isHidden = false
+            cell.activityIndicator.startAnimating()
+        }
+            /*
         // imageData not finished downloading..use placeholder image w/activityView
         else if let urlString = flick.urlString,
             let url = URL(string: urlString) {
@@ -326,7 +333,7 @@ extension AlbumViewController: UICollectionViewDataSource {
                 }
             }
         }
-
+         */
         return cell
     }
 }
@@ -402,6 +409,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         switch type {
         case .insert:
             print("didChange -insert , count: \(String(describing: controller.fetchedObjects?.count))")
+            collectionView.reloadData()
         case .delete:
             collectionView.reloadData()
             print("didChange -delete , count: \(String(describing: controller.fetchedObjects?.count))")

@@ -144,12 +144,6 @@ class MapViewController: UIViewController {
             geoCoder.reverseGeocodeLocation(location) {
                 (placemarks, error) in
                 
-                print("geoCoder completion")
-                
-                if error != nil {
-                    print("geocode error")
-                }
-                
                 // test for geocode errors...look at most pertinent errors
                 if let error = error as? CLError.Code {
                     
@@ -167,15 +161,11 @@ class MapViewController: UIViewController {
                     return
                 }
                 
-                print("no geocode error")
-                
                 // test for valid placemark found in reverse geocoding
                 guard let placemark = placemarks?.first else {
                     self.presentAlertForError(VTError.locationError("Geocoding error. Possible network issue or offline"))
                     return
                 }
-                
-                print("good placemark")
                 
                 // valid placemark info.. continue and create an annot for mapView
                 
@@ -217,7 +207,98 @@ class MapViewController: UIViewController {
                     }
                     
                     let flickr = FlickrAPI()
-                    flickr.createFlickrAlbumForAnnot(annot, withContainer: self.stack.container)
+                    flickr.createFlickrAlbumForAnnotTest2(annot, withContainer: self.stack.container) {
+                        (data) in
+                        
+                        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+                        privateContext.parent = self.context
+                        
+                        privateContext.perform {
+                            
+                            let pin = privateContext.object(with: newPin.objectID) as! Pin
+                            
+                            for urlString in data {
+                                let flick = Flick(context: privateContext)
+                                flick.urlString = urlString
+                                pin.addToFlicks(flick)
+                                
+                                do {
+                                    try privateContext.save()
+                                    
+                                    self.context.performAndWait {
+                                        do {
+                                            try self.context.save()
+                                        } catch {
+                                            
+                                        }
+                                    }
+                                } catch {
+                                    
+                                }
+                            }
+                            
+                            let request: NSFetchRequest<Flick> = Flick.fetchRequest()
+                            let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
+                            let predicate = NSPredicate(format: "pin == %@", pin)
+                            request.predicate = predicate
+                            request.sortDescriptors = [sort]
+                            do {
+                                let objects = try privateContext.fetch(request)
+                                
+                                for flick in objects {
+                                    
+                                    if let urlString = flick.urlString,
+                                    let url = URL(string: urlString),
+                                        let imageData = NSData(contentsOf: url) {
+                                        
+                                        flick.image = imageData
+                                        
+                                        do {
+                                            try privateContext.save()
+                                            
+                                            self.context.performAndWait {
+                                                do {
+                                                    try self.context.save()
+                                                } catch {
+                                                    
+                                                }
+                                            }
+                                        } catch {
+                                        }
+                                    }
+                                }
+                            } catch {
+                            }
+                            
+                            /*
+                            for urlString in data {
+                                
+                                if let url = URL(string: urlString),
+                                    let imageData = NSData(contentsOf: url) {
+                                    
+                                    let flick = Flick(context: privateContext)
+                                    flick.urlString = urlString
+                                    flick.image = imageData
+                                    pin.addToFlicks(flick)
+                                    
+                                    do {
+                                        try privateContext.save()
+                                        
+                                        self.context.performAndWait {
+                                            do {
+                                                try self.context.save()
+                                            } catch {
+                                                
+                                            }
+                                        }
+                                    } catch {
+                                        
+                                    }
+                                }
+                            }
+ */
+                        }
+                    }
                 } catch {
                     //TODO: error handling
                     print("bad context save during new Pin creation")

@@ -15,7 +15,7 @@ import CoreData
 struct FlickrAPI {
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
-    let MAX_IMAGES: Int = 100            // maximum number of images to download
+    let MAX_IMAGES: Int = 50            // maximum number of images to download
     
     // search flicks for photos. Options for geography and text search
     func flickSearchforText(_ text: String? = nil,
@@ -214,7 +214,6 @@ struct FlickrAPI {
                                 do {
                                     try privateContext.save()
                                     print("\(locationTitle) | imageData - good save")
-                                    try container.viewContext.save()
                                 } catch let error {
                                     print("\(locationTitle) | imageData - unable to save private context")
                                     print(error.localizedDescription)
@@ -229,6 +228,75 @@ struct FlickrAPI {
                     print("urlStrings - unable to save private context")
                 }
             }
+        }
+    }
+    
+    // create a flickr album
+    func createFlickrAlbumForAnnotTest(_ annot: VTAnnotation,
+                                       withContainer container: NSPersistentContainer,
+                                       completion: @escaping ([String:NSData]) -> Void) {
+        
+        let longitude = annot.coordinate.longitude
+        let latitude = annot.coordinate.latitude
+        self.flickSearchforText(nil, geo: (longitude, latitude, self.SEARCH_RADIUS)) {
+            (data, error) in
+            
+            guard let data = data else {
+                return
+            }
+            
+            guard let photosDict = data["photos"] as? [String: AnyObject],
+                let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
+                    return
+            }
+            
+            // retieve url strings
+            var urlStringArray = [String]()
+            for dict in photosArray {
+                if let urlString = dict["url_m"] as? String,
+                    urlStringArray.count < self.MAX_IMAGES {
+                    urlStringArray.append(urlString)
+                }
+            }
+            
+            for urlString in urlStringArray {
+                if let url = URL(string: urlString),
+                    let imageData = NSData(contentsOf: url){
+                    completion([urlString: imageData])
+                }
+            }
+        }
+    }
+    
+    // create a flickr album
+    func createFlickrAlbumForAnnotTest2(_ annot: VTAnnotation,
+                                       withContainer container: NSPersistentContainer,
+                                       completion: @escaping ([String]) -> Void) {
+        
+        let longitude = annot.coordinate.longitude
+        let latitude = annot.coordinate.latitude
+        self.flickSearchforText(nil, geo: (longitude, latitude, self.SEARCH_RADIUS)) {
+            (data, error) in
+            
+            guard let data = data else {
+                return
+            }
+            
+            guard let photosDict = data["photos"] as? [String: AnyObject],
+                let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
+                    return
+            }
+            
+            // retieve url strings
+            var urlStringArray = [String]()
+            for dict in photosArray {
+                if let urlString = dict["url_m"] as? String,
+                    urlStringArray.count < self.MAX_IMAGES {
+                    urlStringArray.append(urlString)
+                }
+            }
+            
+            completion(urlStringArray)
         }
     }
 }
