@@ -24,8 +24,8 @@ class AlbumViewController: UIViewController {
         case downloading    // download in progress
     }
     
-    // ref to Pin .. set in invoking VC
-    var pin: Pin!
+    // ref to annotation .. set in invoking VC
+    var annotation: VTAnnotation!
     
     // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
@@ -58,7 +58,7 @@ class AlbumViewController: UIViewController {
         super.viewDidLoad()
         
         // view title
-        title = pin.title
+        title = annotation.pin?.title
         
         // show toolbar
         navigationController?.setToolbarHidden(false, animated: false)
@@ -75,7 +75,7 @@ class AlbumViewController: UIViewController {
         // Core Data: Request, Sort/Predicate, and Controller
         let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
         let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
-        let predicate = NSPredicate(format: "pin == %@", pin!)
+        let predicate = NSPredicate(format: "pin == %@", annotation.pin!)
         fetchRequest.predicate = predicate
         fetchRequest.sortDescriptors = [sort]
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
@@ -211,7 +211,9 @@ class AlbumViewController: UIViewController {
         }
     }
     func reloadBbiPressed(_ sender: UIBarButtonItem) {
-        
+     
+        print("reloadBbiPressed")
+        reloadAlbum()
     }
     
     // handle sharing flick
@@ -235,7 +237,7 @@ class AlbumViewController: UIViewController {
             let image = UIImage(data: imageData) {
             
             var message = "Hello"
-            if let title = pin.title {
+            if let title = annotation.pin?.title {
                 message = message + " from " + title + " !"
             }
             let controller = UIActivityViewController(activityItems: [message, image], applicationActivities: nil)
@@ -568,6 +570,119 @@ extension AlbumViewController {
     
     func reloadAlbum() {
         
+        mode = .downloading
+        configureBars()
         
+        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        privateContext.parent = context
+        privateContext.perform {
+            
+            let pin = privateContext.object(with: (self.annotation.pin?.objectID)!) as! Pin
+            let flicks = pin.flicks
+            for flick in flicks! {
+                privateContext.delete(flick as! NSManagedObject)
+            }
+            
+            do {
+                try privateContext.save()
+                
+                self.context.performAndWait {
+                    do {
+                        try self.context.save()
+                    } catch let error {
+                        print("error: \(error.localizedDescription)")
+                    }
+                }
+            } catch let error {
+                print("error: \(error.localizedDescription)")
+            }
+            
+            let flickrApi = FlickrAPI()
+            flickrApi.createFlickrAlbumForPin(pin) {
+                (data, error) in
+                
+                guard error == nil else {
+                    return
+                }
+                
+                guard let data = data else {
+                    return
+                }
+                
+                for urlString in data {
+                    let flick = Flick(context: privateContext)
+                    flick.urlString = urlString
+                    pin.addToFlicks(flick)
+                }
+                
+                do {
+                    try privateContext.save()
+                    
+                    self.context.performAndWait {
+                        do {
+                            try self.context.save()
+                        } catch let error {
+                            print("error: \(error.localizedDescription)")
+                        }
+                    }
+                } catch let error {
+                    print("error: \(error.localizedDescription)")
+                }
+                
+                
+                /*
+                 Now pull image data..
+                 Want to sort by urlString to match ordering used in FetchResultController
+                 in AlbumVC..for aesthetic reasons..forces images to load in AlbumVC cells
+                 in the order of the cells (top to bottom of collectionView)
+                 */
+                
+                // request
+                let request: NSFetchRequest<Flick> = Flick.fetchRequest()
+                let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
+                let predicate = NSPredicate(format: "pin == %@", pin)
+                request.predicate = predicate
+                request.sortDescriptors = [sort]
+                do {
+                    
+                    // perform fetch
+                    let flicks = try privateContext.fetch(request)
+                    
+                    // iterate, pull image data and assign to Flick
+                    // ..save as each flick is retrieved
+                    for flick in flicks {
+                        
+                        // verify good url, data
+                        if let urlString = flick.urlString,
+                            let url = URL(string: urlString),
+                            let imageData = NSData(contentsOf: url) {
+                            
+                            // assign data to Flick
+                            flick.image = imageData
+                            
+                            // save
+                            do {
+                                try privateContext.save()
+                                
+                                self.context.performAndWait {
+                                    do {
+                                        try self.context.save()
+                                    } catch let error {
+                                        print("error: \(error.localizedDescription)")
+                                    }
+                                }
+                            } catch let error {
+                                print("error: \(error.localizedDescription)")
+                            }
+                        }
+                    }
+                } catch {
+                    // bad fetch
+                    DispatchQueue.main.async {
+                        self.presentAlertForError(VTError.coreData("Unable to retrieve Flicks"))
+                    }
+                }
+            }
+        }
     }
 }

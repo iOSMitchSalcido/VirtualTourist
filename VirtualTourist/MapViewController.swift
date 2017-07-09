@@ -353,7 +353,7 @@ class MapViewController: UIViewController {
         let controller = segue.destination as! AlbumViewController
         controller.stack = stack
         controller.context = context
-        controller.pin = sender as! Pin
+        controller.annotation = sender as! VTAnnotation
     }
 }
 
@@ -440,7 +440,7 @@ extension MapViewController: MKMapViewDelegate {
         }
         // right accessory. Navigate to AlbumVC
         else if control == view.rightCalloutAccessoryView {
-            performSegue(withIdentifier: "AlbumSegueID", sender: pin)
+            performSegue(withIdentifier: "AlbumSegueID", sender: annotation)
         }
     }
 }
