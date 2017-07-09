@@ -565,4 +565,9 @@ extension AlbumViewController {
             trashBbi.isEnabled = false
         }
     }
+    
+    func reloadAlbum() {
+        
+        
+    }
 }
