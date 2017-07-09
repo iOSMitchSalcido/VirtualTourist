@@ -60,13 +60,6 @@ class MapViewController: UIViewController {
             break
         }
         
-        /*
-         do a fetch to populate map with pins. Create a fetch request and an empty annotations array.
-         Iterate through fetch results using attribs to populate properties in MKPoint annotation.
-         This annotation is then added to the annotations array, which is then added to the
-         mapView annotations
-        */
-        
         let flickFr: NSFetchRequest<Flick> = Flick.fetchRequest()
         do {
             let flicksResults = try context.fetch(flickFr)
@@ -77,8 +70,14 @@ class MapViewController: UIViewController {
                 }
             }
         } catch {
-            //TODO: error handling
         }
+        
+        /*
+         do a fetch to populate map with pins. Create a fetch request and an empty annotations array.
+         Iterate through fetch results using attribs to populate properties in MKPoint annotation.
+         This annotation is then added to the annotations array, which is then added to the
+         mapView annotations
+         */
         
         // array to hold annotations
         var annotations = [VTAnnotation]()
@@ -106,7 +105,8 @@ class MapViewController: UIViewController {
                 }
             }
         } catch {
-            //TODO: error handling
+            // fetch error
+            presentAlertForError(VTError.coreData("Unable to retrieve Pins"))
         }
         
         // add annotations to mapView
@@ -123,6 +123,7 @@ class MapViewController: UIViewController {
     @IBAction func longPressDetected(_ sender: UILongPressGestureRecognizer) {
         
         /*
+         Info:
          Handle long press GR. This function handles the detection of a long press. The touch point is identified
          in the mapView into a coord. This coord is then used to geocode a placemark for location identification.
          
@@ -131,7 +132,7 @@ class MapViewController: UIViewController {
         
         switch sender.state {
         case .began:
-            print("longPressBegan")
+            
             // begin long press detection
             
             // get touch point and coord in mapView
@@ -190,9 +191,9 @@ class MapViewController: UIViewController {
                 newCoord.longitude = Double(coord.longitude)
                 
                 // create Pin MO
-                let newPin = Pin(context: self.context)
-                newPin.coordinate = newCoord
-                newPin.title = locationTitle
+                let pin = Pin(context: self.context)
+                pin.coordinate = newCoord
+                pin.title = locationTitle
                 
                 do {
                     try self.context.save()
@@ -201,91 +202,134 @@ class MapViewController: UIViewController {
                     let annot = VTAnnotation()
                     annot.coordinate = coord
                     annot.title = locationTitle
-                    annot.pin = newPin
+                    annot.pin = pin
                     DispatchQueue.main.async {
                         self.mapView.addAnnotation(annot)
                     }
                     
+                    // perform Flickr geo search
                     let flickr = FlickrAPI()
-                    flickr.createFlickrAlbumForPinZ(newPin) {
+                    flickr.createFlickrAlbumForPin(pin) {
                         (data, error) in
                         
+                        // data is array of URL's as strings
+                        
+                        // test error
                         guard error == nil else {
-                            print(error!)
+                            DispatchQueue.main.async {
+                                self.presentAlertForError(error!)
+                            }
                             return
                         }
                         
+                        // test data
                         guard let data = data else {
-                            print("bad array")
+                            DispatchQueue.main.async {
+                                self.presentAlertForError(VTError.generalError("Bad data returned from Flickr"))
+                            }
                             return
                         }
                         
+                        // perform Flick creation on private queue
                         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
                         privateContext.parent = self.context
-                        
-                        print("good array")
-                        
                         privateContext.perform {
                             
-                            let pin = privateContext.object(with: newPin.objectID) as! Pin
+                            // retrieve pin into private context
+                            let pin = privateContext.object(with: pin.objectID) as! Pin
                             
+                            /*
+                             Info on Flick creation:
+                             In this block, Flicks are first created and assigned the attrib "urlString",
+                             and then the context is saved.
+                             
+                             The image data is then retrieve afterwards. This is done for aesthetic reasons so
+                             that if the user navigates into the AlbumVC, the activityIndicators will be active
+                             for ALL flicks that have been found. Then as flick data is retrieved, each cell
+                             will be filled in the correct order
+                            */
+                            
+                            // create a Flick for each urlString..add to pin
                             for urlString in data {
                                 let flick = Flick(context: privateContext)
                                 flick.urlString = urlString
                                 pin.addToFlicks(flick)
-                                
-                                do {
-                                    try privateContext.save()
-                                    
-                                    self.context.performAndWait {
-                                        do {
-                                            try self.context.save()
-                                        } catch {
-                                            
-                                        }
-                                    }
-                                } catch {
-                                    
-                                }
                             }
                             
+                            // save...intended to trigger activity in FetchedResultController
+                            do {
+                                try privateContext.save()
+                                
+                                self.context.performAndWait {
+                                    do {
+                                        try self.context.save()
+                                    } catch let error {
+                                        print("error: \(error.localizedDescription)")
+                                    }
+                                }
+                            } catch let error {
+                                print("error: \(error.localizedDescription)")
+                            }
+                            
+                            /*
+                             Now pull image data..
+                             Want to sort by urlString to match ordering used in FetchResultController
+                             in AlbumVC..for aesthetic reasons..forces images to load in AlbumVC cells
+                             in the order of the cells (top to bottom of collectionView)
+                             */
+                            
+                            // request
                             let request: NSFetchRequest<Flick> = Flick.fetchRequest()
                             let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
                             let predicate = NSPredicate(format: "pin == %@", pin)
                             request.predicate = predicate
                             request.sortDescriptors = [sort]
                             do {
-                                let objects = try privateContext.fetch(request)
                                 
-                                for flick in objects {
+                                // perform fetch
+                                let flicks = try privateContext.fetch(request)
+                                
+                                // iterate, pull image data and assign to Flick
+                                // ..save as each flick is retrieved
+                                for flick in flicks {
                                     
+                                    // verify good url, data
                                     if let urlString = flick.urlString,
                                     let url = URL(string: urlString),
                                         let imageData = NSData(contentsOf: url) {
                                         
+                                        // assign data to Flick
                                         flick.image = imageData
                                         
+                                        // save
                                         do {
                                             try privateContext.save()
                                             
                                             self.context.performAndWait {
                                                 do {
                                                     try self.context.save()
-                                                } catch {
-                                                    
+                                                } catch let error {
+                                                    print("error: \(error.localizedDescription)")
                                                 }
                                             }
-                                        } catch {
+                                        } catch let error {
+                                            print("error: \(error.localizedDescription)")
                                         }
                                     }
                                 }
                             } catch {
+                                // bad fetch
+                                DispatchQueue.main.async {
+                                    self.presentAlertForError(VTError.coreData("Unable to retrieve Flicks"))
+                                }
                             }
                         }
                     }
                 } catch {
-                    //TODO: error handling
-                    print("bad context save during new Pin creation")
+                    // bad Pin save
+                    DispatchQueue.main.async {
+                        self.presentAlertForError(VTError.coreData("Unable to create/save Pin"))
+                    }
                 }
             }
         default:
@@ -387,10 +431,9 @@ extension MapViewController: MKMapViewDelegate {
                         if privateContext.hasChanges {
                             try privateContext.save()
                         }
-                        print("delete Pin MapView - good save 😇😇😇")
                     } catch {
-                        //TODO: error handling
-                        print("delete Pin MapView - bad save 😡😡😡")
+                        // pin deletion error during save
+                        self.presentAlertForError(VTError.coreData("Unable to delete Pin."))
                     }
                 }
             }

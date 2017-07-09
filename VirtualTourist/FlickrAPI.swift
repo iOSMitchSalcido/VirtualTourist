@@ -18,286 +18,63 @@ struct FlickrAPI {
     let SEARCH_RADIUS: Double = 10.0    // default search radius
     let MAX_IMAGES: Int = 50            // maximum number of images to download
     
-    // search flicks for photos. Options for geography and text search
-    func flickSearchforText(_ text: String? = nil,
-                            geo: (lon: Double, lat: Double, radius: Double)? = nil,
-                            completion: @escaping ([String: AnyObject]?, VTError?) -> Void) {
-        
-        // verify valid search params..
-        guard (text != nil) || (geo != nil) else {
-            completion(nil, VTError.operatorError("Invalid text or geo search items"))
-            return
-        }
-        
-        // base params..will ultimately be pulled as queryItems in url creation...
-        var items = ["method": FlickrAPI.Methods.photosSearch,
-                     FlickrAPI.Keys.apiKey: FlickrAPI.Values.apiKey,
-                     FlickrAPI.Keys.format: FlickrAPI.Values.json,
-                     FlickrAPI.Keys.extras: FlickrAPI.Values.mediumURL,
-                     FlickrAPI.Keys.nojsoncallback: FlickrAPI.Values.nojsoncallback,
-                     FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch]
-        
-        // add text search
-        if let text = text {
-            items[FlickrAPI.Keys.text] = text
-        }
-        
-        // add geo search
-        if let geo = geo {
-            items[FlickrAPI.Keys.longitude] = "\(geo.lon)"
-            items[FlickrAPI.Keys.latitude] = "\(geo.lat)"
-            items[FlickrAPI.Keys.radius] = "\(geo.radius)"
-        }
-        
-        // params for task
-        let params = [Networking.Keys.items: items,
-                      Networking.Keys.host: FlickrAPI.Subcomponents.host,
-                      Networking.Keys.scheme: FlickrAPI.Subcomponents.scheme,
-                      Networking.Keys.path: FlickrAPI.Subcomponents.path] as [String : Any]
-        
-        // execute task
-        let networking = Networking()
-        networking.dataTaskForParameters(params as [String : AnyObject], completion: completion)
-    }
-    
     // create a flickr album
-    func createFlickrAlbumForPin(_ pin: Pin, withContainer container: NSPersistentContainer) {
+    func createFlickrAlbumForPin(_ pin: Pin,
+                                 completion: @escaping ([String]?, VTError?) -> Void) {
         
-        container.performBackgroundTask() { (privateContext) in
-            privateContext.mergePolicy = NSMergePolicy.overwrite
-
-            // Begin Flickr image search
-            let lon = Double(pin.coordinate!.longitude)
-            let lat = Double(pin.coordinate!.latitude)
-            
-            self.flickSearchforText(nil, geo: (lon, lat, self.SEARCH_RADIUS)) {
-                (data, error) in
-                
-                guard let data = data else {
-                    return
-                }
-                
-                guard let photosDict = data["photos"] as? [String: AnyObject],
-                    let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
-                        return
-                }
-                
-                // retieve url strings
-                var urlStringArray = [String]()
-                for dict in photosArray {
-                    if let urlString = dict["url_m"] as? String,
-                        urlStringArray.count < self.MAX_IMAGES {
-                        urlStringArray.append(urlString)
-                    }
-                }
-                
-                let privatePin = privateContext.object(with: pin.objectID) as! Pin
-                
-                // create a Flick MO for each url string..add to Pin
-                for string in urlStringArray {
-                    let flick = Flick(context: privateContext)
-                    flick.urlString = string
-                    privatePin.addToFlicks(flick)
-                }
-                
-                // Save
-                do {
-                    try privateContext.save()
-                    print("urlStrings - good save")
-                    
-                    /*
-                     Suspect Pin deleting issue is here..
-                     When deleting Pin who's flicks are still being downloaded, sometimes get a bad save
-                     ..some type of "collision" taking place in the way I'm performing background tasks
-                     */
-                    if let flicks = privatePin.flicks?.array as? [Flick] {
-                        
-                        for flick in flicks {
-                            
-                            if let urlString = flick.urlString,
-                                let url = URL(string: urlString),
-                                let data = NSData(contentsOf: url) {
-                                
-                                flick.image = data
-                                do {
-                                    try privateContext.save()
-                                    print("\(String(describing: pin.title)) | imageData - good save")
-                                } catch {
-                                    print("\(String(describing: pin.title)) | imageData - unable to save private context")
-                                }
-                            }
-                            else {
-                                print("something nil in image data save")
-                            }
-                        }
-                    }
-                } catch {
-                    print("urlStrings - unable to save private context")
-                }
-            }
+        /*
+         Info:
+         This method begins the invocation of a flickr search. The search is a Flickr geo search. The
+         geo info is extracted from the Pin (coordinate attrib).
+         
+         The completion block receives a string array which contains the URL's, in string format, of the
+         found flicks, otherwise a VTError
+         */
+        
+        // verify good coordinates
+        guard let longitude = pin.coordinate?.longitude,
+            let latitude = pin.coordinate?.latitude else {
+                completion(nil, VTError.operatorError("Bad Pin/Location"))
+                return
         }
-    }
-    
-    // create a flickr album
-    func createFlickrAlbumForAnnot(_ annot: VTAnnotation, withContainer container: NSPersistentContainer) {
         
-        container.performBackgroundTask() { (privateContext) in
-            privateContext.mergePolicy = NSMergePolicy.overwrite
-            
-            let pin = annot.pin!
-            
-            // Begin Flickr image search
-            let lon = Double(pin.coordinate!.longitude)
-            let lat = Double(pin.coordinate!.latitude)
-            
-            self.flickSearchforText(nil, geo: (lon, lat, self.SEARCH_RADIUS)) {
-                (data, error) in
-                
-                guard let data = data else {
-                    return
-                }
-                
-                guard let photosDict = data["photos"] as? [String: AnyObject],
-                    let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
-                        return
-                }
-                
-                // retieve url strings
-                var urlStringArray = [String]()
-                for dict in photosArray {
-                    if let urlString = dict["url_m"] as? String,
-                        urlStringArray.count < self.MAX_IMAGES {
-                        urlStringArray.append(urlString)
-                    }
-                }
-                
-                let privatePin = privateContext.object(with: pin.objectID) as! Pin
-                
-                // create a Flick MO for each url string..add to Pin
-                for string in urlStringArray {
-                    
-                    if annot.pin != nil {
-                        let flick = Flick(context: privateContext)
-                        flick.urlString = string
-                        privatePin.addToFlicks(flick)
-                    }
-                }
-                
-                // Save
-                do {
-                    try privateContext.save()
-                    print("urlStrings - good save")
-
-                    // get array of flicks
-                    if let flicks = privatePin.flicks?.array as? [Flick] {
-                        
-                        // iterate through flicks to add image data
-                        for flick in flicks {
-                            
-                            // only proceed to add image data in pin is non-nil
-                            // ...might have been deleted while still downloading flicks
-                            if annot.pin != nil,
-                                let urlString = flick.urlString,
-                                let url = URL(string: urlString),
-                                let data = NSData(contentsOf: url) {
-                                
-                                if annot.pin == nil {
-                                    print("nil Pin")
-                                }
-                                
-                                flick.image = data
-                                
-                                var locationTitle = "Location"
-                                if let pinTitle = annot.pin?.title {
-                                    locationTitle = pinTitle
-                                }
-                                
-                                do {
-                                    try privateContext.save()
-                                    print("\(locationTitle) | imageData - good save")
-                                } catch let error {
-                                    print("\(locationTitle) | imageData - unable to save private context")
-                                    print(error.localizedDescription)
-                                }
-                            }
-                            else {
-                                print("something nil in image data save")
-                            }
-                        }
-                    }
-                } catch {
-                    print("urlStrings - unable to save private context")
-                }
-            }
-        }
-    }
-    
-    // create a flickr album
-    func createFlickrAlbumForAnnotTest(_ annot: VTAnnotation,
-                                       withContainer container: NSPersistentContainer,
-                                       completion: @escaping ([String:NSData]) -> Void) {
-        
-        let longitude = annot.coordinate.longitude
-        let latitude = annot.coordinate.latitude
-        self.flickSearchforText(nil, geo: (longitude, latitude, self.SEARCH_RADIUS)) {
+        // create a CLLocationCoord and invoke search
+        let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+        self.flicksSearchInCoordinate(coordinate) {
             (data, error) in
             
-            guard let data = data else {
+            // test error
+            guard error == nil else {
+                completion(nil, VTError.locationError("Error search for flicks"))
                 return
             }
             
-            guard let photosDict = data["photos"] as? [String: AnyObject],
-                let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
-                    return
-            }
-            
-            // retieve url strings
-            var urlStringArray = [String]()
-            for dict in photosArray {
-                if let urlString = dict["url_m"] as? String,
-                    urlStringArray.count < self.MAX_IMAGES {
-                    urlStringArray.append(urlString)
-                }
-            }
-            
-            for urlString in urlStringArray {
-                if let url = URL(string: urlString),
-                    let imageData = NSData(contentsOf: url){
-                    completion([urlString: imageData])
-                }
-            }
-        }
-    }
-    
-    // create a flickr album
-    func createFlickrAlbumForAnnotTest2(_ annot: VTAnnotation,
-                                       withContainer container: NSPersistentContainer,
-                                       completion: @escaping ([String]) -> Void) {
-        
-        let longitude = annot.coordinate.longitude
-        let latitude = annot.coordinate.latitude
-        self.flickSearchforText(nil, geo: (longitude, latitude, self.SEARCH_RADIUS)) {
-            (data, error) in
-            
+            // test data
             guard let data = data else {
+                completion(nil, VTError.networkError("Bad data returned from Flickr"))
                 return
             }
             
-            guard let photosDict = data["photos"] as? [String: AnyObject],
-                let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
+            // retrieve Flickr data
+            guard let photosDict = data[FlickrAPI.Keys.photosDictionary] as? [String: AnyObject],
+                let photosArray = photosDict[FlickrAPI.Keys.photosArray] as? [[String: AnyObject]] else {
+                    completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
                     return
             }
             
-            // retieve url strings
-            var urlStringArray = [String]()
-            for dict in photosArray {
-                if let urlString = dict["url_m"] as? String,
-                    urlStringArray.count < self.MAX_IMAGES {
-                    urlStringArray.append(urlString)
+            // photos array now contains found flicks as an array of dictionaries
+            
+            // retrieve URL as strings...stay under max count
+            var urlStrings = [String]()
+            for photos in photosArray {
+                if let urlString = photos[FlickrAPI.Values.mediumURL] as? String,
+                    urlStrings.count < self.MAX_IMAGES {
+                    urlStrings.append(urlString)
                 }
             }
             
-            completion(urlStringArray)
+            // fire completion with array
+            completion(urlStrings, nil)
         }
     }
 }
@@ -322,6 +99,10 @@ extension FlickrAPI {
         static let longitude = "lon"
         static let latitude = "lat"
         static let radius = "radius"
+        
+        // keys to returned data
+        static let photosDictionary = "photos"
+        static let photosArray = "photo"
     }
     
     fileprivate struct Values {
@@ -334,10 +115,6 @@ extension FlickrAPI {
         static let safeSearch = "1"
         static let title = "title"
         static let radius10K = "10"
-        
-        // keys to returned data
-        static let photosDictionary = "photos"
-        static let photosArray = "photo"
     }
     
     // subcomponents used to form URL
@@ -355,53 +132,14 @@ extension FlickrAPI {
 
 extension FlickrAPI {
     
-    // create a flickr album
-    func createFlickrAlbumForPinZ(_ pin: Pin,
-                                 completion: @escaping ([String]?, VTError?) -> Void) {
-        
-        guard let longitude = pin.coordinate?.longitude,
-            let latitude = pin.coordinate?.latitude else {
-                completion(nil, VTError.operatorError("Bad Pin/Location"))
-                return
-        }
-        
-        let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-        self.flicksSearchInCoordinate(coordinate) {
-            (data, error) in
-            
-            guard error == nil else {
-                completion(nil, VTError.locationError("Error search for flicks"))
-                return
-            }
-            
-            guard let data = data else {
-                completion(nil, VTError.networkError("Bad data returned from Flickr"))
-                return
-            }
-            
-            print(data)
-            
-            guard let photosDict = data["photos"] as? [String: AnyObject],
-                let photosArray = photosDict["photo"] as? [[String: AnyObject]] else {
-                    completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
-                    return
-            }
-            
-            var urlStrings = [String]()
-            for photos in photosArray {
-                if let urlString = photos["url_m"] as? String,
-                    urlStrings.count < self.MAX_IMAGES {
-                    urlStrings.append(urlString)
-                }
-            }
-            
-            completion(urlStrings, nil)
-        }
-    }
-    
-    // search flicks for photos. Options for geography and text search
+    // search Flickr for flicks based on geo
     fileprivate func flicksSearchInCoordinate(_ coordinate: CLLocationCoordinate2D,
                                   completion: @escaping ([String: AnyObject]?, VTError?) -> Void) {
+        
+        /*
+         Info:
+         Perform a Flickr geo search.
+        */
         
         // base params..will ultimately be pulled as queryItems in url creation...
         var items = ["method": FlickrAPI.Methods.photosSearch,
@@ -410,9 +148,6 @@ extension FlickrAPI {
                      FlickrAPI.Keys.extras: FlickrAPI.Values.mediumURL,
                      FlickrAPI.Keys.nojsoncallback: FlickrAPI.Values.nojsoncallback,
                      FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch]
-        
-        print(coordinate.longitude)
-        print(coordinate.latitude)
         
         // params for geo search
         items[FlickrAPI.Keys.longitude] = "\(coordinate.longitude)"

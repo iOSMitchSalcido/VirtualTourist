@@ -17,6 +17,7 @@ enum VTError: Swift.Error {
     case networkError(String)   // problems in URLSessionDataTask, networking errors
     case operatorError(String)  // issues such as typos, bad username/password, etc
     case generalError(String)   // misc/unknown error, etc
+    case coreData(String)       // coreData related issue
 }
 
 struct Networking {

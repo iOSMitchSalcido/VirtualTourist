@@ -72,6 +72,9 @@ extension UIViewController {
         case .operatorError(let value):
             alertTitle = "Operator Error"
             alertMessage = value
+        case .coreData(let value):
+            alertTitle = "Core Data Error"
+            alertMessage = value
         }
         
         let alert = UIAlertController(title: alertTitle, message: alertMessage, preferredStyle: .alert)
