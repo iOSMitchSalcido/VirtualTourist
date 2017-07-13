@@ -598,7 +598,7 @@ extension AlbumViewController {
             }
             
             let flickrApi = FlickrAPI()
-            flickrApi.createFlickrAlbumForPin(pin) {
+            flickrApi.createFlickrAlbumForPin(pin, page: nil) {
                 (data, error) in
                 
                 guard error == nil else {

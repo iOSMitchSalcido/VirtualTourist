@@ -209,7 +209,7 @@ class MapViewController: UIViewController {
                     
                     // perform Flickr geo search
                     let flickr = FlickrAPI()
-                    flickr.createFlickrAlbumForPin(pin) {
+                    flickr.createFlickrAlbumForPin(pin, page: nil) {
                         (data, error) in
                         
                         // data is array of URL's as strings

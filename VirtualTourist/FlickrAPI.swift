@@ -17,19 +17,12 @@ struct FlickrAPI {
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
     let MAX_IMAGES: Int = 50            // maximum number of images to download
+    let MAX_FLICKS: Int = 4000          // maximum number of flicks that Flickr will return
     
     // create a flickr album
     func createFlickrAlbumForPin(_ pin: Pin,
-                                 completion: @escaping ([String]?, VTError?) -> Void) {
-        
-        /*
-         Info:
-         This method begins the invocation of a flickr search. The search is a Flickr geo search. The
-         geo info is extracted from the Pin (coordinate attrib).
-         
-         The completion block receives a string array which contains the URL's, in string format, of the
-         found flicks, otherwise a VTError
-         */
+                                  page: Int?,
+                                  completion: @escaping ([String]?, VTError?) -> Void) {
         
         // verify good coordinates
         guard let longitude = pin.coordinate?.longitude,
@@ -40,7 +33,9 @@ struct FlickrAPI {
         
         // create a CLLocationCoord and invoke search
         let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-        self.flicksSearchInCoordinate(coordinate) {
+        let params = createPhotoSearchParamsForCoordinate(coordinate, page: page)
+        
+        Networking().dataTaskForParameters(params) {
             (data, error) in
             
             // test error
@@ -56,25 +51,47 @@ struct FlickrAPI {
             }
             
             // retrieve Flickr data
-            guard let photosDict = data[FlickrAPI.Keys.photosDictionary] as? [String: AnyObject],
-                let photosArray = photosDict[FlickrAPI.Keys.photosArray] as? [[String: AnyObject]] else {
+            guard let photosDict = data[FlickrAPI.Keys.photosDictionary] as? [String: AnyObject] else {
+                completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
+                return
+            }
+            
+            if let items = params[Networking.Keys.items] as? [String: AnyObject],
+                let _ = items[FlickrAPI.Keys.page] {
+                
+                // page was a search param..proceed to retrieve flick URL's as strings
+                guard let photosArray = photosDict[FlickrAPI.Keys.photosArray] as? [[String: AnyObject]] else {
                     completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
                     return
-            }
-            
-            // photos array now contains found flicks as an array of dictionaries
-            
-            // retrieve URL as strings...stay under max count
-            var urlStrings = [String]()
-            for photos in photosArray {
-                if let urlString = photos[FlickrAPI.Values.mediumURL] as? String,
-                    urlStrings.count < self.MAX_IMAGES {
-                    urlStrings.append(urlString)
                 }
+                
+                // retrieve URL as strings...stay under max count
+                var urlStrings = [String]()
+                for photos in photosArray {
+                    if let urlString = photos[FlickrAPI.Values.mediumURL] as? String,
+                        urlStrings.count < self.MAX_IMAGES {
+                        urlStrings.append(urlString)
+                    }
+                }
+                
+                // fire completion with array
+                completion(urlStrings, nil)
             }
-            
-            // fire completion with array
-            completion(urlStrings, nil)
+            else {
+                
+                guard let pages = photosDict[FlickrAPI.Keys.pages] as? Int,
+                    let perPage = photosDict[FlickrAPI.Keys.perPage] as? Int else {
+                        completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
+                        return
+                }
+                
+                // Flickr has 4000 photo limit. Get max allowable page search, generate a random page
+                let pageLimit = min(pages, self.MAX_FLICKS / perPage)
+                let randomPage = Int(arc4random_uniform(UInt32(pageLimit))) + 1
+                
+                // run new search using random page
+                self.createFlickrAlbumForPin(pin, page: randomPage, completion: completion)
+            }
         }
     }
 }
@@ -93,8 +110,10 @@ extension FlickrAPI {
         static let safeSearch = "safe_search"
         
         // search related params
-        static let perPage = "per_page"
+        static let perPage = "perpage"
         static let page = "page"
+        static let pages = "pages"
+        static let total = "total"
         static let text = "text"
         static let longitude = "lon"
         static let latitude = "lat"
@@ -132,36 +151,29 @@ extension FlickrAPI {
 
 extension FlickrAPI {
     
-    // search Flickr for flicks based on geo
-    fileprivate func flicksSearchInCoordinate(_ coordinate: CLLocationCoordinate2D,
-                                  completion: @escaping ([String: AnyObject]?, VTError?) -> Void) {
+    // helper function to create params used by data task for flick search
+    func createPhotoSearchParamsForCoordinate(_ coordinate: CLLocationCoordinate2D, page: Int?) -> [String: AnyObject] {
         
-        /*
-         Info:
-         Perform a Flickr geo search.
-        */
-        
-        // base params..will ultimately be pulled as queryItems in url creation...
+        // build base params
         var items = ["method": FlickrAPI.Methods.photosSearch,
                      FlickrAPI.Keys.apiKey: FlickrAPI.Values.apiKey,
                      FlickrAPI.Keys.format: FlickrAPI.Values.json,
                      FlickrAPI.Keys.extras: FlickrAPI.Values.mediumURL,
                      FlickrAPI.Keys.nojsoncallback: FlickrAPI.Values.nojsoncallback,
-                     FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch]
+                     FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch,
+                     FlickrAPI.Keys.longitude: "\(coordinate.longitude)",
+            FlickrAPI.Keys.latitude: "\(coordinate.latitude)",
+            FlickrAPI.Keys.radius: "\(self.SEARCH_RADIUS)"]
         
-        // params for geo search
-        items[FlickrAPI.Keys.longitude] = "\(coordinate.longitude)"
-        items[FlickrAPI.Keys.latitude] = "\(coordinate.latitude)"
-        items[FlickrAPI.Keys.radius] = "\(self.SEARCH_RADIUS)"
+        // include page search if non-nil
+        if let page = page {
+            items["page"] = "\(page)"
+        }
         
-        // params for task
-        let params = [Networking.Keys.items: items,
-                      Networking.Keys.host: FlickrAPI.Subcomponents.host,
-                      Networking.Keys.scheme: FlickrAPI.Subcomponents.scheme,
-                      Networking.Keys.path: FlickrAPI.Subcomponents.path] as [String : Any]
-        
-        // execute task
-        let networking = Networking()
-        networking.dataTaskForParameters(params as [String : AnyObject], completion: completion)
+        // return params for task
+        return [Networking.Keys.items: items as AnyObject,
+                Networking.Keys.host: FlickrAPI.Subcomponents.host as AnyObject,
+                Networking.Keys.scheme: FlickrAPI.Subcomponents.scheme as AnyObject,
+                Networking.Keys.path: FlickrAPI.Subcomponents.path as AnyObject]
     }
 }
