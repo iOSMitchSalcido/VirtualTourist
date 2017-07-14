@@ -103,6 +103,14 @@ class MapViewController: UIViewController {
                     annot.pin = pin
                     annotations.append(annot)
                 }
+                
+                // remove flicks that have nil image
+                // ..may be nil if app was terminated during downloadloading of album
+                for flick in pin.flicks! {
+                    if (flick as! Flick).image == nil {
+                        pin.removeFromFlicks(flick as! Flick)
+                    }
+                }
             }
         } catch {
             // fetch error
