@@ -139,6 +139,9 @@
                                     <constraint firstAttribute="width" constant="250" id="ZvU-AZ-J1Q"/>
                                 </constraints>
                             </scrollView>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="kwd-j7-laH">
+                                <rect key="frame" x="142" y="266" width="37" height="37"/>
+                            </activityIndicatorView>
                         </subviews>
                         <color key="backgroundColor" red="0.90196079019999997" green="0.90196079019999997" blue="0.90196079019999997" alpha="1" colorSpace="calibratedRGB"/>
                         <gestureRecognizers/>
@@ -146,13 +149,16 @@
                             <constraint firstItem="dEm-XI-Z3t" firstAttribute="centerX" secondItem="SFi-0c-b8y" secondAttribute="centerX" id="Anr-ac-wim"/>
                             <constraint firstItem="AGN-pQ-DmZ" firstAttribute="top" secondItem="U64-XZ-710" secondAttribute="bottom" constant="-64" id="BNQ-Kp-Die"/>
                             <constraint firstItem="feD-ZP-GDP" firstAttribute="top" secondItem="AGN-pQ-DmZ" secondAttribute="bottom" id="HNS-ka-jdQ"/>
+                            <constraint firstItem="kwd-j7-laH" firstAttribute="centerX" secondItem="SFi-0c-b8y" secondAttribute="centerX" id="OZr-JY-JPc"/>
                             <constraint firstAttribute="trailing" secondItem="AGN-pQ-DmZ" secondAttribute="trailing" id="Z2x-ad-13F"/>
+                            <constraint firstItem="kwd-j7-laH" firstAttribute="centerY" secondItem="SFi-0c-b8y" secondAttribute="centerY" id="bXw-Ow-92v"/>
                             <constraint firstItem="AGN-pQ-DmZ" firstAttribute="leading" secondItem="SFi-0c-b8y" secondAttribute="leading" id="ftm-vt-QfO"/>
                             <constraint firstItem="dEm-XI-Z3t" firstAttribute="centerY" secondItem="SFi-0c-b8y" secondAttribute="centerY" id="vvv-KF-kXh"/>
                         </constraints>
                     </view>
                     <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" prompted="NO"/>
                     <connections>
+                        <outlet property="activityIndicator" destination="kwd-j7-laH" id="UeJ-3D-TSJ"/>
                         <outlet property="collectionView" destination="AGN-pQ-DmZ" id="aaC-py-XHy"/>
                         <outlet property="flowLayout" destination="h6k-Jx-Ejz" id="Bpz-Sa-7p8"/>
                         <outlet property="imagePreviewScrollView" destination="dEm-XI-Z3t" id="Vae-dn-0zm"/>

@@ -2,7 +2,7 @@
 //  Pin+CoreDataProperties.swift
 //  VirtualTourist
 //
-//  Created by Online Training on 6/23/17.
+//  Created by Online Training on 7/13/17.
 //  Copyright © 2017 Mitch Salcido. All rights reserved.
 //
 
@@ -19,7 +19,6 @@ extension Pin {
     @NSManaged public var title: String?
     @NSManaged public var coordinate: Coordinate?
     @NSManaged public var flicks: NSOrderedSet?
-
 }
 
 // MARK: Generated accessors for flicks

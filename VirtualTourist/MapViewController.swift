@@ -194,7 +194,6 @@ class MapViewController: UIViewController {
                 let pin = Pin(context: self.context)
                 pin.coordinate = newCoord
                 pin.title = locationTitle
-                
                 do {
                     try self.context.save()
                     

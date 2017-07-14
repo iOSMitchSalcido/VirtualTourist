@@ -41,7 +41,8 @@ class AlbumViewController: UIViewController {
     @IBOutlet weak var collectionView: UICollectionView!            // collection view showing flicks
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!      // ref to CV flowLayout
     @IBOutlet weak var imagePreviewScrollView: UIScrollView!        // scrollView for flick preview
-
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!  // activity indicator for network activity
+    
     // indicate flick download progress. Ref needed to update progress and downloads are in process
     var progressView: UIProgressView?
 
@@ -422,6 +423,9 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                 
                 // config scrollView with images
                 configureImagePreviewScrollView()
+                
+                // reload table...
+                collectionView.reloadData()
             }
         }
     }

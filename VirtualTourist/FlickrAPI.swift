@@ -16,7 +16,7 @@ import MapKit
 struct FlickrAPI {
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
-    let MAX_IMAGES: Int = 50            // maximum number of images to download
+    let MAX_IMAGES: Int = 100           // maximum number of images to download
     let MAX_FLICKS: Int = 4000          // maximum number of flicks that Flickr will return
     
     // create a flickr album
@@ -94,6 +94,32 @@ struct FlickrAPI {
             }
         }
     }
+    
+    // helper function to create params used by data task for flick search
+    func createPhotoSearchParamsForCoordinate(_ coordinate: CLLocationCoordinate2D, page: Int?) -> [String: AnyObject] {
+        
+        // build base params
+        var items = ["method": FlickrAPI.Methods.photosSearch,
+                     FlickrAPI.Keys.apiKey: FlickrAPI.Values.apiKey,
+                     FlickrAPI.Keys.format: FlickrAPI.Values.json,
+                     FlickrAPI.Keys.extras: FlickrAPI.Values.mediumURL,
+                     FlickrAPI.Keys.nojsoncallback: FlickrAPI.Values.nojsoncallback,
+                     FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch,
+                     FlickrAPI.Keys.longitude: "\(coordinate.longitude)",
+            FlickrAPI.Keys.latitude: "\(coordinate.latitude)",
+            FlickrAPI.Keys.radius: "\(self.SEARCH_RADIUS)"]
+        
+        // include page search if non-nil
+        if let page = page {
+            items["page"] = "\(page)"
+        }
+        
+        // return params for task
+        return [Networking.Keys.items: items as AnyObject,
+                Networking.Keys.host: FlickrAPI.Subcomponents.host as AnyObject,
+                Networking.Keys.scheme: FlickrAPI.Subcomponents.scheme as AnyObject,
+                Networking.Keys.path: FlickrAPI.Subcomponents.path as AnyObject]
+    }
 }
 
 // constants
@@ -146,34 +172,5 @@ extension FlickrAPI {
     // methods
     fileprivate struct Methods {
         static let photosSearch = "flickr.photos.search"
-    }
-}
-
-extension FlickrAPI {
-    
-    // helper function to create params used by data task for flick search
-    func createPhotoSearchParamsForCoordinate(_ coordinate: CLLocationCoordinate2D, page: Int?) -> [String: AnyObject] {
-        
-        // build base params
-        var items = ["method": FlickrAPI.Methods.photosSearch,
-                     FlickrAPI.Keys.apiKey: FlickrAPI.Values.apiKey,
-                     FlickrAPI.Keys.format: FlickrAPI.Values.json,
-                     FlickrAPI.Keys.extras: FlickrAPI.Values.mediumURL,
-                     FlickrAPI.Keys.nojsoncallback: FlickrAPI.Values.nojsoncallback,
-                     FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch,
-                     FlickrAPI.Keys.longitude: "\(coordinate.longitude)",
-            FlickrAPI.Keys.latitude: "\(coordinate.latitude)",
-            FlickrAPI.Keys.radius: "\(self.SEARCH_RADIUS)"]
-        
-        // include page search if non-nil
-        if let page = page {
-            items["page"] = "\(page)"
-        }
-        
-        // return params for task
-        return [Networking.Keys.items: items as AnyObject,
-                Networking.Keys.host: FlickrAPI.Subcomponents.host as AnyObject,
-                Networking.Keys.scheme: FlickrAPI.Subcomponents.scheme as AnyObject,
-                Networking.Keys.path: FlickrAPI.Subcomponents.path as AnyObject]
     }
 }
