@@ -12,6 +12,7 @@
         <relationship name="pin" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Pin" inverseName="flicks" inverseEntity="Pin" syncable="YES"/>
     </entity>
     <entity name="Pin" representedClassName="Pin" syncable="YES">
+        <attribute name="isDownloading" optional="YES" attributeType="Boolean" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="coordinate" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="Coordinate" inverseName="pin" inverseEntity="Coordinate" syncable="YES"/>
         <relationship name="flicks" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="Flick" inverseName="pin" inverseEntity="Flick" syncable="YES"/>
@@ -19,6 +20,6 @@
     <elements>
         <element name="Coordinate" positionX="-36" positionY="9" width="128" height="90"/>
         <element name="Flick" positionX="-54" positionY="-9" width="128" height="105"/>
-        <element name="Pin" positionX="-63" positionY="-18" width="128" height="90"/>
+        <element name="Pin" positionX="-63" positionY="-18" width="128" height="105"/>
     </elements>
 </model>
