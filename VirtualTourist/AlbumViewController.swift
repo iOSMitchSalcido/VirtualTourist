@@ -199,30 +199,47 @@ class AlbumViewController: UIViewController {
     // handle trash bbi..delete flicks from collectionView
     func trashBbiPressed(_ sender: UIBarButtonItem) {
         
-        // iterate, delete flick, then clear selectedCells
-        for indexPath in selectedCellsIndexPaths {
-            let flick = fetchedResultsController.object(at: indexPath)
-            context.delete(flick)
-        }
-        selectedCellsIndexPaths.removeAll()
-        
-        // save
-        do {
-            try context.save()
+        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        privateContext.parent = context
+        privateContext.perform {
             
-            // update scrollView
-            configureImagePreviewScrollView()
+            // iterate, delete flick, then clear selectedCells
+            for indexPath in self.selectedCellsIndexPaths {
+                let flick = self.fetchedResultsController.object(at: indexPath)
+                let privateFlick = privateContext.object(with: flick.objectID) as! Flick
+                privateContext.delete(privateFlick)
+            }
+            self.selectedCellsIndexPaths.removeAll()
             
-            // if no flicks, conclude editing
-            if fetchedResultsController.fetchedObjects?.count == 0 {
-                setEditing(false, animated: true)
+            do {
+                try privateContext.save()
+                
+                self.context.performAndWait {
+                    do {
+                        try self.context.save()
+                    } catch let error {
+                        print("error: \(error.localizedDescription)")
+                    }
+                    
+                    // update scrollView
+                    self.configureImagePreviewScrollView()
+                    
+                    // if no flicks, conclude editing
+                    if self.fetchedResultsController.fetchedObjects?.count == 0 {
+                        DispatchQueue.main.async {
+                            self.setEditing(false, animated: true)
+                        }
+                    }
+                    else {
+                        // nothing selected, disable trash
+                        DispatchQueue.main.async {
+                            self.trashBbi.isEnabled = false
+                        }
+                    }
+                }
+            } catch let error {
+                print("error: \(error.localizedDescription)")
             }
-            else {
-                // nothing selected, disable trash
-                trashBbi.isEnabled = false
-            }
-        } catch {
-            //TODO: handle error
         }
     }
     
