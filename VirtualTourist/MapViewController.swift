@@ -103,14 +103,7 @@ class MapViewController: UIViewController {
                     annot.pin = pin
                     annotations.append(annot)
                 }
-                
-                // remove flicks that have nil image
-                // ..may be nil if app was terminated during downloadloading of album
-                for flick in pin.flicks! {
-                    if (flick as! Flick).image == nil {
-                        pin.removeFromFlicks(flick as! Flick)
-                    }
-                }
+                pin.isDownloading = false
             }
         } catch {
             // fetch error
@@ -202,6 +195,8 @@ class MapViewController: UIViewController {
                 let pin = Pin(context: self.context)
                 pin.coordinate = newCoord
                 pin.title = locationTitle
+                pin.isDownloading = true
+
                 do {
                     try self.context.save()
                     
@@ -323,6 +318,21 @@ class MapViewController: UIViewController {
                                             print("error: \(error.localizedDescription)")
                                         }
                                     }
+                                }
+                                pin.isDownloading = false
+                                // save
+                                do {
+                                    try privateContext.save()
+                                    
+                                    self.context.performAndWait {
+                                        do {
+                                            try self.context.save()
+                                        } catch let error {
+                                            print("error: \(error.localizedDescription)")
+                                        }
+                                    }
+                                } catch let error {
+                                    print("error: \(error.localizedDescription)")
                                 }
                             } catch {
                                 // bad fetch

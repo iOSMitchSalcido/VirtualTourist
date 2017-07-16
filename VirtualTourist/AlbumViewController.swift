@@ -73,6 +73,20 @@ class AlbumViewController: UIViewController {
                                    target: self,
                                    action: #selector(trashBbiPressed(_:)))
         
+        /*
+         Test dowload status of Pin. If not downloading, then want to test if
+         all flick urlStrings have a corresponding flick image. If not, then
+         invoke method continueDownload
+        */
+        if !(annotation.pin?.isDownloading)! {          // test is pin is currently downloading
+            if !(annotation.pin?.downloadComplete)! {   // test if all urls have been downloaded
+                
+                // not currently downloading AND there are flicks that have nil images
+                // ...proceed to download unloaded flick images
+                continueFlickDownload()
+            }
+        }
+        
         // Core Data: Request, Sort/Predicate, and Controller
         let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
         let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
@@ -211,10 +225,16 @@ class AlbumViewController: UIViewController {
             //TODO: handle error
         }
     }
+    
+    // handle album reload
     func reloadBbiPressed(_ sender: UIBarButtonItem) {
      
-        print("reloadBbiPressed")
-        reloadAlbum()
+        presentProceedCancelAlert(title: "Load new album",
+                                  message: "Delete all flicks and replace with newly downloaded album ?") {
+                                    (UIAlertAction) in
+
+                                    self.reloadAlbum()
+        }
     }
     
     // handle sharing flick
@@ -583,6 +603,8 @@ extension AlbumViewController {
             
             let pin = privateContext.object(with: (self.annotation.pin?.objectID)!) as! Pin
             let flicks = pin.flicks
+            pin.isDownloading = true
+            
             for flick in flicks! {
                 privateContext.delete(flick as! NSManagedObject)
             }
@@ -680,12 +702,96 @@ extension AlbumViewController {
                             }
                         }
                     }
+                    
+                    pin.isDownloading = false
+                    // save
+                    do {
+                        try privateContext.save()
+                        
+                        self.context.performAndWait {
+                            do {
+                                try self.context.save()
+                            } catch let error {
+                                print("error: \(error.localizedDescription)")
+                            }
+                        }
+                    } catch let error {
+                        print("error: \(error.localizedDescription)")
+                    }
                 } catch {
                     // bad fetch
                     DispatchQueue.main.async {
                         self.presentAlertForError(VTError.coreData("Unable to retrieve Flicks"))
                     }
                 }
+            }
+        }
+    }
+    
+    func continueFlickDownload() {
+        
+        mode = .downloading
+        configureBars()
+        
+        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        privateContext.parent = context
+        privateContext.perform {
+            
+            let pin = privateContext.object(with: (self.annotation.pin?.objectID)!) as! Pin
+            pin.isDownloading = true
+            
+            // request
+            let request: NSFetchRequest<Flick> = Flick.fetchRequest()
+            let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
+            let predicate = NSPredicate(format: "pin == %@", pin)
+            request.predicate = predicate
+            request.sortDescriptors = [sort]
+            
+            do {
+                let flicks = try privateContext.fetch(request)
+                
+                for flick in flicks {
+                    
+                    if flick.image == nil,
+                        let urlString = flick.urlString,
+                        let url = URL(string: urlString),
+                        let imageData = NSData(contentsOf: url) {
+                        
+                        flick.image = imageData
+                        
+                        // save
+                        do {
+                            try privateContext.save()
+                            
+                            self.context.performAndWait {
+                                do {
+                                    try self.context.save()
+                                } catch let error {
+                                    print("error: \(error.localizedDescription)")
+                                }
+                            }
+                        } catch let error {
+                            print("error: \(error.localizedDescription)")
+                        }
+                    }
+                }
+                pin.isDownloading = false
+                // save
+                do {
+                    try privateContext.save()
+                    
+                    self.context.performAndWait {
+                        do {
+                            try self.context.save()
+                        } catch let error {
+                            print("error: \(error.localizedDescription)")
+                        }
+                    }
+                } catch let error {
+                    print("error: \(error.localizedDescription)")
+                }
+            } catch {
+                print("error: \(error.localizedDescription)")
             }
         }
     }

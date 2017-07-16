@@ -11,5 +11,15 @@ import CoreData
 
 @objc(Pin)
 public class Pin: NSManagedObject {
-
+    
+    var downloadComplete: Bool {
+        get {
+            for flick in self.flicks! {
+                if (flick as! Flick).image == nil {
+                    return false
+                }
+            }
+            return true
+        }
+    }
 }
