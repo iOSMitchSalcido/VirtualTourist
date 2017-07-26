@@ -16,7 +16,7 @@ import MapKit
 struct FlickrAPI {
     
     let SEARCH_RADIUS: Double = 10.0    // default search radius
-    let MAX_IMAGES: Int = 100           // maximum number of images to download
+    let MAX_IMAGES: Int = 25           // maximum number of images to download
     let MAX_FLICKS: Int = 4000          // maximum number of flicks that Flickr will return
     
     // create a flickr album
