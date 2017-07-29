@@ -5,25 +5,37 @@
 //  Created by Online Training on 6/16/17.
 //  Copyright © 2017 Mitch Salcido. All rights reserved.
 //
+/*
+ About AlbumViewController.swift:
+ Handle presentation of an album of flicks (photos) that have been downloaded from Flickr. Flick's are attached to a
+ Pin managed object.
+ 
+- collectionView for presenting downloaded flicks.
+- scrollView to preview a flick when collectionView cell is tapped.
+- NSFetchedResultsController to handle loading flicks into collectionView, including frc delegate
+  to handle loading flicks while still actively downloading.
+ */
 
 import UIKit
 import CoreData
 
 class AlbumViewController: UIViewController {
     
-    // constants
+    // constants for collectionView cell size and spacing
     let CELL_SPACING: CGFloat = 2.0     // spacing between cells
     let CELLS_PER_ROW: CGFloat = 4.0    // number of cells per row, same for both portrait and landscape orientation
-    let DOWNLOAD_COMPLETE: Float = 1.0  // constant.. indicates completion of download
+    
+    // constant for download complete... < 1.0 still downloading
+    // ..pertinent when frc is still in the process of downloading flicks
+    let DOWNLOAD_COMPLETE: Float = 1.0
     
     // ref to annotation who's flicks are being presented .. set in invoking VC
     var annotation: VTAnnotation!
     
     // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
-    var context: NSManagedObjectContext!
     
-    // view mode..used to track/test/steer how view is currently presented
+    // view mode enum ..used to track/test/steer how view is currently presented and UI presented
     enum AlbumViewingMode {
         case preDownloading // awaiting initial data (flickr url string data)
         case downloading    // download in progress (flickr image data)
@@ -36,18 +48,19 @@ class AlbumViewController: UIViewController {
     var mode: AlbumViewingMode = .preDownloading
     
     // gr used for dismissing imagePreviewScrollView
+    // created and attached to view when cell is tapped to preview a flick. gr is removed from view
+    // when view is tapped to dismiss imagePreviewScrollView
     var tapGr: UITapGestureRecognizer?
     
     // view objects
     @IBOutlet weak var collectionView: UICollectionView!            // collection view showing flicks
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!      // ref to CV flowLayout
     @IBOutlet weak var imagePreviewScrollView: UIScrollView!        // scrollView for flick preview
-    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!  // activity indicator for network activity
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!  // activity indicator for pre-download status
+    var progressView: UIProgressView?                               // bar to indicate download status..in toolbar
     
-    // indicate flick download progress. Ref needed to update progress when downloads are in process
-    var progressView: UIProgressView?
 
-    // ref to trashBbi. Ref needed to enable/disable bbi as flicks are selected/deselected
+    // ref to trashBbi...needed to enable/disable bbi as flicks are selected/deselected
     var trashBbi: UIBarButtonItem!
     
     // NSFetchedResultController
@@ -56,7 +69,7 @@ class AlbumViewController: UIViewController {
     // array of cell indexPaths for cells that are currently selected (checkmark, ready to delete)
     // used to track cells to be deleted when trash bbi pressed
     var selectedCellsIndexPaths = [IndexPath]()
-        
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -70,6 +83,7 @@ class AlbumViewController: UIViewController {
         activityIndicator.isHidden = true
         
         // hide imagePreviewScrollView, disable touch
+        // ..use alpha to hide, will be animating in/out
         imagePreviewScrollView.alpha = 0.0
         imagePreviewScrollView.isUserInteractionEnabled = false
         
@@ -87,14 +101,19 @@ class AlbumViewController: UIViewController {
             }
         }
         
-        // Core Data: Request, Sort/Predicate, and Controller
+        /*
+         Core Data:
+         create a fetch request and attached to frc
+         - sort on url string of flick
+         - predicate is pin... flick belongs to pin
+        */
         let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
         let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
         let predicate = NSPredicate(format: "pin == %@", annotation.pin!)
         fetchRequest.predicate = predicate
         fetchRequest.sortDescriptors = [sort]
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
-                                                           managedObjectContext: context,
+                                                           managedObjectContext: stack.context,
                                                            sectionNameKeyPath: nil,
                                                            cacheName: nil)
         fetchedResultsController.delegate = self
@@ -106,19 +125,19 @@ class AlbumViewController: UIViewController {
             // test download progress. non-nil indicates download in progress
             if let progress = downloadProgress() {
                 
-                if progress == 0.0 {
-                    mode = .preDownloading
-                }
-                else if progress < DOWNLOAD_COMPLETE {
+                if progress < DOWNLOAD_COMPLETE {   // download is not complete.. set UI to downloading
                     mode = .downloading
                 }
-                else {
+                else {                              // download is complete.. set UI to normal
                     configureImagePreviewScrollView()
                     mode = .normal
                 }
             }
+            
+            // configure UI
             configureBars()
         } catch {
+            // fetch error..present alert
             presentAlertForError(VTError.coreData(error.localizedDescription))
         }
     }
@@ -129,20 +148,25 @@ class AlbumViewController: UIViewController {
         
         // vertical scroll
         flowLayout.scrollDirection = .vertical
-
-        // spacing between rows and cells
+        
+        // spacing between rows/columns
         flowLayout.minimumLineSpacing = CELL_SPACING
         flowLayout.minimumInteritemSpacing = CELL_SPACING
-
+        
         // create/set itemSize for cell
         let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (CELLS_PER_ROW - 1.0) * CELL_SPACING
-        flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,
-                                     height: widthAvailableForCellsInRow / CELLS_PER_ROW)
+        flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,                                     height: widthAvailableForCellsInRow / CELLS_PER_ROW)
     }
-    
+
     // handle view editing
     override func setEditing(_ editing: Bool, animated: Bool) {
         super.setEditing(editing, animated: animated)
+        
+        /*
+         handle placing view into editing mode. In editing mode, collectionView is dimmed slightly and
+         subsequent taps on cv cells will place a "checkmark" to indicate ready for deletion upon
+         pressing of trash button.
+        */
         
         if editing {
             // editing..set mode to editing
@@ -159,7 +183,7 @@ class AlbumViewController: UIViewController {
         collectionView.reloadData()
     }
     
-    // handle showing/dismissing imagePreviewScrollView
+    // handle dismissing imagePreviewScrollView
     func singleTapDetected(_ sender: UITapGestureRecognizer) {
         
         // test mode
@@ -172,7 +196,7 @@ class AlbumViewController: UIViewController {
             mode = .normal
             configureBars()
             
-            // UI
+            // UI touch response
             imagePreviewScrollView.isUserInteractionEnabled = false
             collectionView.isUserInteractionEnabled = true
             
@@ -182,11 +206,11 @@ class AlbumViewController: UIViewController {
                 tapGr = nil
             }
             
-            // animate in/out UI
+            // animate CV/imagePreview in/out
             UIView.animate(withDuration: 0.3) {
                 
-                self.imagePreviewScrollView.alpha = 0.0
                 self.collectionView.alpha = 1.0
+                self.imagePreviewScrollView.alpha = 0.0
             }
         default:
             break
@@ -196,45 +220,55 @@ class AlbumViewController: UIViewController {
     // handle trash bbi..delete flicks from collectionView
     func trashBbiPressed(_ sender: UIBarButtonItem) {
         
+        /*
+         delete currently selected flicks in CV. Selected flicks are maintained as
+         indexPaths in array selectedCellsIndexPaths.
+        */
+        
+        // perform deletion on private queue
         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-        privateContext.parent = context
+        privateContext.parent = stack.context
         privateContext.perform {
             
-            // iterate, delete flick, then clear selectedCells
+            // iterate, delete flick
             for indexPath in self.selectedCellsIndexPaths {
+                
+                // retireve flick, then bring into private context using objectID..delete
                 let flick = self.fetchedResultsController.object(at: indexPath)
                 let privateFlick = privateContext.object(with: flick.objectID) as! Flick
                 privateContext.delete(privateFlick)
             }
+            
+            // clear out indexPaths from array
             self.selectedCellsIndexPaths.removeAll()
             
+            // save
             do {
                 try privateContext.save()
-                
-                self.context.performAndWait {
+                self.stack.context.performAndWait {
                     do {
-                        try self.context.save()
-                    } catch let error {
+                        try self.stack.context.save()
+                    } catch {
                         print("error: \(error.localizedDescription)")
                     }
-                    
-                    // update scrollView
-                    self.configureImagePreviewScrollView()
-                    
-                    // if no flicks, conclude editing
-                    if self.fetchedResultsController.fetchedObjects?.count == 0 {
-                        DispatchQueue.main.async {
-                            self.setEditing(false, animated: true)
-                        }
-                    }
-                    else {
-                        // nothing selected, disable trash
-                        DispatchQueue.main.async {
-                            self.trashBbi.isEnabled = false
-                        }
+                }
+                
+                // update scrollView to match collectionView flicks
+                //self.configureImagePreviewScrollView()
+                
+                // if no flicks, conclude editing
+                if self.fetchedResultsController.fetchedObjects?.count == 0 {
+                    DispatchQueue.main.async {
+                        self.setEditing(false, animated: true)
                     }
                 }
-            } catch let error {
+                else {
+                    // nothing selected, disable trash
+                    DispatchQueue.main.async {
+                        self.trashBbi.isEnabled = false
+                    }
+                }
+            } catch {
                 print("error: \(error.localizedDescription)")
             }
         }
@@ -243,6 +277,7 @@ class AlbumViewController: UIViewController {
     // handle album reload
     func reloadBbiPressed(_ sender: UIBarButtonItem) {
      
+        // present proceed.cancel alert..about to delete all flicks
         if (fetchedResultsController.fetchedObjects?.count)! > 0 {
             
             presentProceedCancelAlert(title: "Load new album",
@@ -290,6 +325,7 @@ class AlbumViewController: UIViewController {
 // MARK: UICollectionView DataSource methods
 extension AlbumViewController: UICollectionViewDataSource {
     
+    // sections
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         
         guard let sections = fetchedResultsController.sections else {
@@ -298,6 +334,7 @@ extension AlbumViewController: UICollectionViewDataSource {
         return sections.count
     }
     
+    // item count
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
         guard let section = fetchedResultsController.sections?[section] else {
@@ -307,6 +344,7 @@ extension AlbumViewController: UICollectionViewDataSource {
         return section.numberOfObjects
     }
     
+    // cell
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCellID", for: indexPath) as! PhotoCell
         
@@ -448,21 +486,27 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         */
 
         switch mode {
-        case .normal:
-            break
+        case .preDownloading:
+            if let progress = downloadProgress(),
+                progress > 0.0 {
+                
+                // received at least first image data. Remove from predownloading into dowloading
+                mode = .downloading
+                configureBars()
+            }
         case .downloading:
             // test progressView to indicate if downloading
             if let progressView = progressView,
                 let progress = downloadProgress() {
                 
                 if progress < DOWNLOAD_COMPLETE {
-                    // download still in progress (progress < 1.0)
+                    // download still in progress (progress < 1.0)..update progress
                     progressView.setProgress(progress, animated: true)
                 }
                 else {
-                    // done downloading (progress >= 1.0
+                    // done downloading (progress >= 1.0)
                     
-                    // mode
+                    // return to normal mode
                     mode = .normal
                     configureBars()
                     
@@ -473,18 +517,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                     collectionView.reloadData()
                 }
             }
-            break
-        case .editing:
-            break
-        case .imagePreview:
-            break
-        case .preDownloading:
-            // received at least first image data. Remove from predownloading into dowloading
-            if let progress = downloadProgress(),
-                progress > 0.0 {
-                mode = .downloading
-                configureBars()
-            }
+        default:
             break
         }
     }
@@ -555,7 +588,7 @@ extension AlbumViewController {
         // iterate thru flicks
         for flick in flicks {
             
-            // verift valid image data and good image
+            // verify valid image data and good image
             if let imageData = flick.image as Data?,
                 let image = UIImage(data: imageData) {
                 
@@ -588,7 +621,7 @@ extension AlbumViewController {
         case .preDownloading:
             /*
              pre-download. Awaiting URL string download from flickr..
-             ...happens before image data is downloaded.
+             ...occurs before image data is downloaded.
              */
             activityIndicator.isHidden = false
             activityIndicator.startAnimating()
@@ -609,6 +642,8 @@ extension AlbumViewController {
             /*
              Normal mode. Flicks are presented in collectionView.
              */
+            
+            // show edit bbi of flicks present
             if let flicks = fetchedResultsController.fetchedObjects,
                 flicks.count > 0 {
                 navigationItem.setRightBarButton(editButtonItem, animated: true)
@@ -616,6 +651,8 @@ extension AlbumViewController {
             else {
                 navigationItem.setRightBarButton(nil, animated: true)
             }
+            
+            // reload album bbi
             let reloadBbi = UIBarButtonItem(barButtonSystemItem: .refresh,
                                             target: self,
                                             action: #selector(reloadBbiPressed(_:)))
@@ -634,12 +671,15 @@ extension AlbumViewController {
             /*
              Image Preview. Flicks are presented in a scrollView
             */
-            setToolbarItems(nil, animated: true)
             
+            // share bbi in right navbar
             let shareBbi = UIBarButtonItem(barButtonSystemItem: .action,
                                            target: self,
                                            action: #selector(shareFlickBbiPressed(_:)))
             navigationItem.setRightBarButton(shareBbi, animated: true)
+
+            // nil toolbar bbi's
+            setToolbarItems(nil, animated: true)
         }
     }
     
@@ -652,7 +692,7 @@ extension AlbumViewController {
         
         // perform on private context/queue
         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-        privateContext.parent = context
+        privateContext.parent = stack.context
         privateContext.perform {
             
             // retrieve pin. Indicate downloading
@@ -669,9 +709,9 @@ extension AlbumViewController {
             do {
                 try privateContext.save()
                 
-                self.context.performAndWait {
+                self.stack.context.performAndWait {
                     do {
-                        try self.context.save()
+                        try self.stack.context.save()
                     } catch let error {
                         print("error: \(error.localizedDescription)")
                     }
@@ -706,9 +746,9 @@ extension AlbumViewController {
                 do {
                     try privateContext.save()
                     
-                    self.context.performAndWait {
+                    self.stack.context.performAndWait {
                         do {
-                            try self.context.save()
+                            try self.stack.context.save()
                         } catch let error {
                             print("error: \(error.localizedDescription)")
                         }
@@ -751,9 +791,9 @@ extension AlbumViewController {
                             do {
                                 try privateContext.save()
                                 
-                                self.context.performAndWait {
+                                self.stack.context.performAndWait {
                                     do {
-                                        try self.context.save()
+                                        try self.stack.context.save()
                                     } catch let error {
                                         print("error: \(error.localizedDescription)")
                                     }
@@ -770,9 +810,9 @@ extension AlbumViewController {
                     do {
                         try privateContext.save()
                         
-                        self.context.performAndWait {
+                        self.stack.context.performAndWait {
                             do {
-                                try self.context.save()
+                                try self.stack.context.save()
                             } catch let error {
                                 print("error: \(error.localizedDescription)")
                             }
@@ -793,7 +833,7 @@ extension AlbumViewController {
     func continueFlickDownload() {
         
         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-        privateContext.parent = context
+        privateContext.parent = stack.context
         privateContext.perform {
             
             let pin = privateContext.object(with: (self.annotation.pin?.objectID)!) as! Pin
@@ -822,9 +862,9 @@ extension AlbumViewController {
                         do {
                             try privateContext.save()
                             
-                            self.context.performAndWait {
+                            self.stack.context.performAndWait {
                                 do {
-                                    try self.context.save()
+                                    try self.stack.context.save()
                                 } catch let error {
                                     print("error: \(error.localizedDescription)")
                                 }
@@ -839,9 +879,9 @@ extension AlbumViewController {
                 do {
                     try privateContext.save()
                     
-                    self.context.performAndWait {
+                    self.stack.context.performAndWait {
                         do {
-                            try self.context.save()
+                            try self.stack.context.save()
                         } catch let error {
                             print("error: \(error.localizedDescription)")
                         }

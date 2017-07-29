@@ -369,7 +369,6 @@ class MapViewController: UIViewController {
         // set pin and core data in destination controller
         let controller = segue.destination as! AlbumViewController
         controller.stack = stack
-        controller.context = context
         controller.annotation = sender as! VTAnnotation
     }
 }
