@@ -86,21 +86,7 @@ class AlbumViewController: UIViewController {
         // ..use alpha to hide, will be animating in/out
         imagePreviewScrollView.alpha = 0.0
         imagePreviewScrollView.isUserInteractionEnabled = false
-        
-        /*
-         Test dowload status of Pin. If not downloading, then want to test if
-         all flick urlStrings have a corresponding flick image. If not, then
-         invoke method continueDownload
-        */
-        if !(annotation.pin?.isDownloading)! {          // test if pin is currently downloading
-            if !(annotation.pin?.downloadComplete)! {   // test if all urls have been downloaded
-                
-                // not currently downloading AND there are flicks that have nil images
-                // ...proceed to download unloaded flick images
-                continueFlickDownload()
-            }
-        }
-        
+
         /*
          Core Data:
          create a fetch request and attached to frc
@@ -122,25 +108,38 @@ class AlbumViewController: UIViewController {
         do {
             try fetchedResultsController.performFetch()
             
-            // test download progress. non-nil indicates download in progress
-            if let progress = downloadProgress() {
-                
-                print("non-nil progress")
-                if progress < DOWNLOAD_COMPLETE {   // download is not complete.. set UI to downloading
-                    mode = .downloading
-                }
-                else {                              // download is complete.. set UI to normal
-                    configureImagePreviewScrollView()
-                    mode = .normal
-                }
+            /*
+             determine view mode from possible states
+             - predownloading -> pin isDownloading, flick count = 0
+             - downloading -> pin isDownloading, flick count > 0
+             - flicks, incomplete download
+             - flicks, completed download
+             - no flicks
+             */
+            
+            if (annotation.pin?.isDownloading)! && (fetchedResultsController.fetchedObjects?.isEmpty)! {
+                // pin isDownloading, no flicks yet retrieved
+                mode = .preDownloading
+            }
+            else if (annotation.pin?.isDownloading)! && !(fetchedResultsController.fetchedObjects?.isEmpty)! {
+                // pin is downloading, flicks have been retrieved
+                mode = .downloading
+            }
+            else if !(annotation.pin?.downloadComplete)! {
+                // not downloading and incomplete download..
+                mode = .downloading
+                continueFlickDownload() // continue downloading any unloaded flicks
             }
             else {
-                print("nil progress")
-                //mode = .normal
+                // complete or no flicks
+                mode = .normal
             }
             
             // configure UI
             configureBars()
+            
+            // scrollView
+            configureImagePreviewScrollView()
         } catch {
             // fetch error..present alert
             presentAlertForError(VTError.coreData(error.localizedDescription))
@@ -643,6 +642,9 @@ extension AlbumViewController {
             activityIndicator.isHidden = true
             activityIndicator.stopAnimating()
             progressView = UIProgressView(progressViewStyle: .default)
+            if let progress = downloadProgress() {
+                progressView?.progress = progress
+            }
             let progressBbi = UIBarButtonItem(customView: progressView!)
             setToolbarItems([flexBbi, progressBbi, flexBbi], animated: true)
             navigationItem.setRightBarButton(nil, animated: true)
