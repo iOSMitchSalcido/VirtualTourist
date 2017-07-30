@@ -678,7 +678,7 @@ extension AlbumViewController {
             activityIndicator.stopAnimating()
             
             // create progressView and update
-            progressView = UIProgressView(progressViewStyle: .default)
+            progressView = UIProgressView(progressViewStyle: .bar)
             if let progress = downloadProgress() {
                 progressView?.progress = progress
             }
