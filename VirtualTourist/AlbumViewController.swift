@@ -125,6 +125,7 @@ class AlbumViewController: UIViewController {
             // test download progress. non-nil indicates download in progress
             if let progress = downloadProgress() {
                 
+                print("non-nil progress")
                 if progress < DOWNLOAD_COMPLETE {   // download is not complete.. set UI to downloading
                     mode = .downloading
                 }
@@ -132,6 +133,10 @@ class AlbumViewController: UIViewController {
                     configureImagePreviewScrollView()
                     mode = .normal
                 }
+            }
+            else {
+                print("nil progress")
+                //mode = .normal
             }
             
             // configure UI
@@ -183,37 +188,36 @@ class AlbumViewController: UIViewController {
         collectionView.reloadData()
     }
     
-    // handle dismissing imagePreviewScrollView
+    // action for single-tap gr
     func singleTapDetected(_ sender: UITapGestureRecognizer) {
         
-        // test mode
-        switch mode {
-        case .imagePreview:
+        /*
+         handle removing view from imagePreview mode
+         ..view is currently in imagePreview mode. Return to normal
+         mode and remove gr from view to prevent from receiving touch
+         events.
+         ..gr is added to view when cell is tapped and mode is changed to imagePreview
+        */
+        
+        // ..return to normal mode
+        mode = .normal
+        configureBars()
+        
+        // UI touch response
+        imagePreviewScrollView.isUserInteractionEnabled = false
+        collectionView.isUserInteractionEnabled = true
+        
+        // remove gr
+        if tapGr != nil {
+            view.removeGestureRecognizer(tapGr!)
+            tapGr = nil
+        }
+        
+        // animate CV/imagePreview in/out
+        UIView.animate(withDuration: 0.3) {
             
-            // currently in imagePreview mode (scrollView is visible)
-            
-            // ..return to normal mode
-            mode = .normal
-            configureBars()
-            
-            // UI touch response
-            imagePreviewScrollView.isUserInteractionEnabled = false
-            collectionView.isUserInteractionEnabled = true
-            
-            // remove gr
-            if tapGr != nil {
-                view.removeGestureRecognizer(tapGr!)
-                tapGr = nil
-            }
-            
-            // animate CV/imagePreview in/out
-            UIView.animate(withDuration: 0.3) {
-                
-                self.collectionView.alpha = 1.0
-                self.imagePreviewScrollView.alpha = 0.0
-            }
-        default:
-            break
+            self.collectionView.alpha = 1.0
+            self.imagePreviewScrollView.alpha = 0.0
         }
     }
     
@@ -222,7 +226,9 @@ class AlbumViewController: UIViewController {
         
         /*
          delete currently selected flicks in CV. Selected flicks are maintained as
-         indexPaths in array selectedCellsIndexPaths.
+         indexPaths in array selectedCellsIndexPaths. Deletion consists of deleting
+         flicks from context and then removing associated indexPath from selectedCellsIndexPaths
+         array
         */
         
         // perform deletion on private queue
@@ -230,7 +236,7 @@ class AlbumViewController: UIViewController {
         privateContext.parent = stack.context
         privateContext.perform {
             
-            // iterate, delete flick
+            // iterate, delete flick from context
             for indexPath in self.selectedCellsIndexPaths {
                 
                 // retireve flick, then bring into private context using objectID..delete
@@ -254,10 +260,12 @@ class AlbumViewController: UIViewController {
                 }
                 
                 // update scrollView to match collectionView flicks
-                //self.configureImagePreviewScrollView()
+                DispatchQueue.main.async {
+                    self.configureImagePreviewScrollView()
+                }
                 
                 // if no flicks, conclude editing
-                if self.fetchedResultsController.fetchedObjects?.count == 0 {
+                if (self.fetchedResultsController.fetchedObjects?.isEmpty)! {
                     DispatchQueue.main.async {
                         self.setEditing(false, animated: true)
                     }
@@ -540,7 +548,7 @@ extension AlbumViewController {
         // get count, test for zero objects and return 0.0
         let count = Float(fetchedObjects.count)
         if count == 0 {
-            return nil
+            //return nil
         }
         
         // count non-nil image, sum
