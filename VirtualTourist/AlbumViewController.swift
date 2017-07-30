@@ -467,9 +467,6 @@ extension AlbumViewController: UICollectionViewDelegate {
 // MARK: NSFetchedResultsController Delegate methods
 extension AlbumViewController: NSFetchedResultsControllerDelegate {
     
-    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-    }
-    
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         
         switch type {
@@ -550,21 +547,21 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
     }
 }
 
-// helper functions
+// helper function
 extension AlbumViewController {
     
     // return download progress 0.0 -> no downloads yet. 1.0 -> downloads complete
     func downloadProgress() -> Float? {
         
+        /*
+         return download progress.
+         progress in non-nil image data count / total count
+         used for progressView updates
+        */
+        
         // verify valid objects
         guard let fetchedObjects = fetchedResultsController.fetchedObjects else {
             return nil
-        }
-        
-        // get count, test for zero objects and return 0.0
-        let count = Float(fetchedObjects.count)
-        if count == 0 {
-            //return nil
         }
         
         // count non-nil image, sum
@@ -575,12 +572,23 @@ extension AlbumViewController {
             }
         }
 
+        // get count
+        let count = Float(fetchedObjects.count)
+        if count == 0.0 {
+            return 0.0
+        }
+        
         // return ratio
-        return downloadCount / count
+        return downloadCount / Float(fetchedObjects.count)
     }
     
     // load imagePreviewScrollView
     func configureImagePreviewScrollView() {
+        
+        /*
+         configure imagePreviewScrollView.
+         clear all imageView subviews and reload with existing flicks currently presented in CV
+        */
         
         // test for objects
         guard let flicks = fetchedResultsController.fetchedObjects else {
@@ -605,8 +613,8 @@ extension AlbumViewController {
         
         // size for contentSize...will accumulate width as views are created/added
         var size = CGSize(width: 0.0, height: frame.height)
-        
-        // id imageViews in scrollView
+
+        // tag to id imageViews in scrollView
         var tag: Int = 100
         
         // iterate thru flicks
@@ -635,6 +643,10 @@ extension AlbumViewController {
     // configure bbi's on nav/tool bar
     func configureBars() {
         
+        /*
+         configure the bars depending on view mode
+        */
+        
         // nil progressView..will be created if downloading
         progressView = nil
         
@@ -647,8 +659,12 @@ extension AlbumViewController {
              pre-download. Awaiting URL string download from flickr..
              ...occurs before image data is downloaded.
              */
+            
+            // show activityIndicator in middle of CV
             activityIndicator.isHidden = false
             activityIndicator.startAnimating()
+            
+            // nil all bbi's on bars
             setToolbarItems(nil, animated: true)
             navigationItem.setRightBarButton(nil, animated: true)
             break
@@ -656,12 +672,18 @@ extension AlbumViewController {
             /*
              Downloading mode. VC is currently in the process of downloading flicks.
              */
+            
+            // hide activityView in middle of CV....default cells now have activityViews
             activityIndicator.isHidden = true
             activityIndicator.stopAnimating()
+            
+            // create progressView and update
             progressView = UIProgressView(progressViewStyle: .default)
             if let progress = downloadProgress() {
                 progressView?.progress = progress
             }
+            
+            // add bbi's to bars
             let progressBbi = UIBarButtonItem(customView: progressView!)
             setToolbarItems([flexBbi, progressBbi, flexBbi], animated: true)
             navigationItem.setRightBarButton(nil, animated: true)
@@ -670,7 +692,7 @@ extension AlbumViewController {
              Normal mode. Flicks are presented in collectionView.
              */
             
-            // show edit bbi of flicks present
+            // show edit bbi if flicks present
             if let flicks = fetchedResultsController.fetchedObjects,
                 flicks.count > 0 {
                 navigationItem.setRightBarButton(editButtonItem, animated: true)
@@ -688,6 +710,7 @@ extension AlbumViewController {
             /*
              Editing. VC has been placed in editing mode
              */
+            
             // create trashBbi
             trashBbi = UIBarButtonItem(barButtonSystemItem: .trash,
                                        target: self,
@@ -713,6 +736,11 @@ extension AlbumViewController {
     // reload album with new flicks
     func reloadAlbum() {
         
+        /*
+         Using private queue/context, delete all flicks, then perform task to reload
+         a new set of images.
+        */
+        
         // configure UI
         mode = .preDownloading
         configureBars()
@@ -732,7 +760,7 @@ extension AlbumViewController {
                 privateContext.delete(flick as! NSManagedObject)
             }
             
-            // save..capture flick deletion and isDownloading to false
+            // save..capture flick deletion and isDownloading set to false
             do {
                 try privateContext.save()
                 
@@ -747,18 +775,23 @@ extension AlbumViewController {
                 print("error: \(error.localizedDescription)")
             }
             
-            // begin download of new album
-            let flickrApi = FlickrAPI()
-            flickrApi.createFlickrAlbumForPin(pin, page: nil) {
+            // begin download of new album using API call
+            FlickrAPI().createFlickrAlbumForPin(pin, page: nil) {
                 (data, error) in
                 
-                // test error
+                // test error, show alert if error
                 guard error == nil else {
+                    DispatchQueue.main.async {
+                        self.presentAlertForError(error!)
+                    }
                     return
                 }
                 
-                // test data
+                // test data, show alert if bad data
                 guard let data = data else {
+                    DispatchQueue.main.async {
+                        self.presentAlertForError(VTError.networkError("Bad data returned from Flickr."))
+                    }
                     return
                 }
                 
@@ -848,10 +881,7 @@ extension AlbumViewController {
                         print("error: \(error.localizedDescription)")
                     }
                 } catch {
-                    // bad fetch
-                    DispatchQueue.main.async {
-                        self.presentAlertForError(VTError.coreData("Unable to retrieve Flicks"))
-                    }
+                    print("error: \(error.localizedDescription)")
                 }
             }
         }
@@ -859,10 +889,18 @@ extension AlbumViewController {
     
     func continueFlickDownload() {
         
+        /*
+         finish downloading flicks for a Pin that has flicks with nil image data
+         ..this condition might occur if app was terminated during a download, leaving
+         flicks with nil image data that still needs to be downloaded.
+        */
+        
+        // perform on private context/queue
         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         privateContext.parent = stack.context
         privateContext.perform {
             
+            // retrieve pin, set isDownloading
             let pin = privateContext.object(with: (self.annotation.pin?.objectID)!) as! Pin
             pin.isDownloading = true
             
@@ -873,9 +911,11 @@ extension AlbumViewController {
             request.predicate = predicate
             request.sortDescriptors = [sort]
             
+            // perform fetch
             do {
                 let flicks = try privateContext.fetch(request)
                 
+                // iterate, retrieve image data
                 for flick in flicks {
                     
                     if flick.image == nil,
@@ -901,7 +941,9 @@ extension AlbumViewController {
                         }
                     }
                 }
+                // done downloading
                 pin.isDownloading = false
+                
                 // save
                 do {
                     try privateContext.save()

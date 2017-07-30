@@ -40,7 +40,7 @@ struct FlickrAPI {
             
             // test error
             guard error == nil else {
-                completion(nil, VTError.locationError("Error search for flicks"))
+                completion(nil, VTError.networkError("Error search for flicks"))
                 return
             }
             
