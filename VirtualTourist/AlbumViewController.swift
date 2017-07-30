@@ -35,7 +35,7 @@ class AlbumViewController: UIViewController {
     // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
     
-    // view mode enum ..used to track/test/steer how view is currently presented and UI presented
+    // view mode enum ..used to track/test/steer how view is currently and UI is presented
     enum AlbumViewingMode {
         case preDownloading // awaiting initial data (flickr url string data)
         case downloading    // download in progress (flickr image data)
@@ -109,12 +109,13 @@ class AlbumViewController: UIViewController {
             try fetchedResultsController.performFetch()
             
             /*
-             determine view mode from possible states
-             - predownloading -> pin isDownloading, flick count = 0
-             - downloading -> pin isDownloading, flick count > 0
-             - flicks, incomplete download
-             - flicks, completed download
-             - no flicks
+             determine view mode from possible flick download states....test in this order
+             1) predownloading:
+                isDownloading, flick count = 0
+             2) downloading:
+                isDownloading, flick count > 0
+                !isDownloading, !downloadComplete ..need to complete download
+             3) normal
              */
             
             if (annotation.pin?.isDownloading)! && (fetchedResultsController.fetchedObjects?.isEmpty)! {
@@ -125,7 +126,7 @@ class AlbumViewController: UIViewController {
                 // pin is downloading, flicks have been retrieved
                 mode = .downloading
             }
-            else if !(annotation.pin?.downloadComplete)! {
+            else if !(annotation.pin?.isDownloading)! && !(annotation.pin?.downloadComplete)! {
                 // not downloading and incomplete download..
                 mode = .downloading
                 continueFlickDownload() // continue downloading any unloaded flicks
@@ -284,6 +285,11 @@ class AlbumViewController: UIViewController {
     // handle album reload
     func reloadBbiPressed(_ sender: UIBarButtonItem) {
      
+        /*
+         Reload album with a new set of flicks (discard flicks currently in cv.
+         Present an alert/proceed if flick count > 0
+        */
+        
         // present proceed.cancel alert..about to delete all flicks
         if (fetchedResultsController.fetchedObjects?.count)! > 0 {
             
@@ -347,7 +353,6 @@ extension AlbumViewController: UICollectionViewDataSource {
         guard let section = fetchedResultsController.sections?[section] else {
             return 0
         }
-        
         return section.numberOfObjects
     }
     
@@ -372,7 +377,7 @@ extension AlbumViewController: UICollectionViewDataSource {
         // test for valid image..has already been downloaded from Flickr
         if let imageData = flick.image {
             
-            // valid imageData...place image in cell
+            // valid imageData...place image in cell, hide activityIndicator
             
             if let image = UIImage(data: imageData as Data) {
                 cell.imageView.image = image
@@ -382,6 +387,8 @@ extension AlbumViewController: UICollectionViewDataSource {
         }
         else {
          
+            // imageData not yet downloaded..place default image  and activityIndicator in cell
+            
             cell.imageView.image = UIImage(named: "DefaultCVCellImage")
             cell.activityIndicator.isHidden = false
             cell.activityIndicator.startAnimating()
@@ -396,6 +403,12 @@ extension AlbumViewController: UICollectionViewDelegate {
     // handle cell selection..also deselection
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
 
+        /*
+         delegate method handles:
+            - If vc in currently in .normal mode, placing vc into imagePreview mode when a cell is tapped
+            - If in .editing mode, selecting/deselecting a cell/flick for deletion
+        */
+        
         switch mode {
         case .normal:
             
@@ -408,12 +421,13 @@ extension AlbumViewController: UICollectionViewDelegate {
             collectionView.isUserInteractionEnabled = false
             
             // add tap gr to detect end of imagePreview mode
+            // ..action method handles placing view back into .normal mode.
             tapGr = UITapGestureRecognizer(target: self,
                                            action: #selector(singleTapDetected(_:)))
             tapGr?.numberOfTapsRequired = 1
             view.addGestureRecognizer(tapGr!)
             
-            // set scroll location to flick/cell selected
+            // set scroll location to flick/cell that was tapped
             let frame = imagePreviewScrollView.frame
             let xOrg = CGFloat(indexPath.row) * frame.size.width
             let point = CGPoint(x: xOrg, y: 0)
@@ -454,38 +468,36 @@ extension AlbumViewController: UICollectionViewDelegate {
 extension AlbumViewController: NSFetchedResultsControllerDelegate {
     
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("willChange")
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         
         switch type {
         case .insert:
-            print("didChange -insert , count: \(String(describing: controller.fetchedObjects?.count))")
             collectionView.reloadData()
         case .delete:
             collectionView.reloadData()
-            print("didChange -delete , count: \(String(describing: controller.fetchedObjects?.count))")
-        case .move:
-            print("didChange -move , count: \(String(describing: controller.fetchedObjects?.count))")
         case .update:
-            print("didChange -update , count: \(String(describing: controller.fetchedObjects?.count))")
+            // handle updating cell with newly downloaded flick
             if let indexPath = indexPath {
                 
+                // get flick image data, image, and cell
                 if let imageData = fetchedResultsController.object(at: indexPath).image as Data?,
                     let image = UIImage(data: imageData),
                     let cell = collectionView.cellForItem(at: indexPath) as? PhotoCell{
                     
+                    // update cell with flick, hide activityIndicator
                     cell.imageView.image = image
                     cell.activityIndicator.stopAnimating()
                     cell.activityIndicator.isHidden = true
                 }
             }
+        default:
+            break
         }
     }
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("didChangeContent , count: \(String(describing: controller.fetchedObjects?.count))")
         
         /*
          Handle UI while downloading. Test download progress, set UI elements
@@ -494,15 +506,23 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
 
         switch mode {
         case .preDownloading:
+            /*
+             currently in .preDownloading mode (no flicks received yet)
+             Test download progress. When at least one download has been received, remove
+             from preDownloading and place into .downloading mode
+            */
             if let progress = downloadProgress(),
                 progress > 0.0 {
                 
-                // received at least first image data. Remove from predownloading into dowloading
                 mode = .downloading
                 configureBars()
             }
         case .downloading:
-            // test progressView to indicate if downloading
+            /*
+             currently downloading.
+             test downloadProgress and update progressView. When download has been complete, remove
+             from .download mode and place in .normal mode
+            */
             if let progressView = progressView,
                 let progress = downloadProgress() {
                 
@@ -527,9 +547,6 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         default:
             break
         }
-    }
-    
-    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
     }
 }
 
