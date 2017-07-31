@@ -82,3 +82,8 @@ extension UIViewController {
         present(alert, animated: true)
     }
 }
+
+// related to core data and Flick downloading
+extension UIViewController {
+    
+}
