@@ -14,12 +14,19 @@
 - progressView on navBar to indicate download progress.
 - NSFetchedResultsController to handle loading flicks into collectionView, including frc delegate
   to handle loading flicks while still actively downloading.
+- functionality to delete flicks
  */
 
 import UIKit
 import CoreData
 
 class AlbumViewController: UIViewController {
+    
+    // ref to annotation who's flicks are being presented .. set in invoking VC
+    var annotation: VTAnnotation!
+    
+    // ref to stack, context, and Pin ..set in invoking VC
+    var stack: CoreDataStack!
     
     // constants for collectionView cell size and spacing
     let CELL_SPACING: CGFloat = 2.0     // spacing between cells
@@ -28,12 +35,6 @@ class AlbumViewController: UIViewController {
     // constant for download complete... < 1.0 still downloading
     // ..pertinent when frc is still in the process of downloading flicks
     let DOWNLOAD_COMPLETE: Float = 1.0
-    
-    // ref to annotation who's flicks are being presented .. set in invoking VC
-    var annotation: VTAnnotation!
-    
-    // ref to stack, context, and Pin ..set in invoking VC
-    var stack: CoreDataStack!
     
     // view mode enum ..used to track/test/steer how view/UI is presented
     enum AlbumViewingMode {
@@ -66,7 +67,7 @@ class AlbumViewController: UIViewController {
     var fetchedResultsController: NSFetchedResultsController<Flick>!
     
     // array of cell indexPaths for cells that are currently selected (checkmark, ready to delete)
-    // used to track cells to be deleted when trash bbi pressed
+    // used to track cells/flicks to be deleted when trash bbi pressed
     var selectedCellsIndexPaths = [IndexPath]()
 
     override func viewDidLoad() {
@@ -96,6 +97,9 @@ class AlbumViewController: UIViewController {
         progressView = UIProgressView(progressViewStyle: .bar)
         progressView.progress = 0.7
         progressView.alpha = 0.0
+        if let navBar = navigationController?.navigationBar {
+            navBar.addSubview(progressView)
+        }
         
         /*
          Core Data:
@@ -172,13 +176,12 @@ class AlbumViewController: UIViewController {
         let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (CELLS_PER_ROW - 1.0) * CELL_SPACING
         flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,                                     height: widthAvailableForCellsInRow / CELLS_PER_ROW)
         
-        // update progressView to correct postion on navBar
+        // update progressView frame to postion on navBar
         if let navBar = navigationController?.navigationBar {
             
             progressView.frame.size.width = navBar.frame.size.width
             progressView.frame.origin.x = 0.0
             progressView.frame.origin.y = navBar.frame.size.height - progressView.frame.height
-            navBar.addSubview(progressView)
         }
     }
 
@@ -929,6 +932,7 @@ extension AlbumViewController {
         }
     }
     
+    // continue downloading flicks
     func continueFlickDownload() {
         
         /*
