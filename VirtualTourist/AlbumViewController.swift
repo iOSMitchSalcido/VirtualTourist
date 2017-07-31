@@ -11,6 +11,7 @@
  
 - collectionView for presenting downloaded flicks.
 - scrollView to preview a flick when collectionView cell is tapped.
+- progressView on navBar to indicate download progress.
 - NSFetchedResultsController to handle loading flicks into collectionView, including frc delegate
   to handle loading flicks while still actively downloading.
  */
@@ -34,7 +35,7 @@ class AlbumViewController: UIViewController {
     // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
     
-    // view mode enum ..used to track/test/steer how view is currently and UI is presented
+    // view mode enum ..used to track/test/steer how view/UI is presented
     enum AlbumViewingMode {
         case preDownloading // awaiting initial data (flickr url string data)
         case downloading    // download in progress (flickr image data)
@@ -56,7 +57,7 @@ class AlbumViewController: UIViewController {
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!      // ref to CV flowLayout
     @IBOutlet weak var imagePreviewScrollView: UIScrollView!        // scrollView for flick preview
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!  // activity indicator for pre-download status
-    var progressView: UIProgressView!                               // bar to indicate download status..in toolbar
+    var progressView: UIProgressView!                               // indicate download status, placed on navbar
     
     // ref to trashBbi...needed to enable/disable bbi as flicks are selected/deselected
     var trashBbi: UIBarButtonItem!
@@ -72,7 +73,12 @@ class AlbumViewController: UIViewController {
         super.viewDidLoad()
         
         // view title
-        title = annotation.pin?.title
+        if let viewTitle = annotation.pin?.title {
+            title = viewTitle
+        }
+        else {
+            title = "Location"
+        }
         
         // show toolbar
         navigationController?.setToolbarHidden(false, animated: false)
@@ -670,13 +676,15 @@ extension AlbumViewController {
          configure the bars depending on view mode
         */
         
-        // nil progressView..will be created if downloading
-        // TODO: progressView
-        //progressView = nil
-        
         // flexBbi...used is various modes below...
         let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
 
+        // placeholderBbi..used to mask navbar back button..used in various modes below
+        let placeholdeBbi = UIBarButtonItem(title: "",
+                                            style: .plain,
+                                            target: nil,
+                                            action: nil)
+        
         switch mode {
         case .preDownloading:
             /*
@@ -690,6 +698,7 @@ extension AlbumViewController {
             
             // nil all bbi's on bars
             setToolbarItems(nil, animated: true)
+            navigationItem.setLeftBarButton(nil, animated: true)
             navigationItem.setRightBarButton(nil, animated: true)
             break
         case .downloading:
@@ -701,19 +710,16 @@ extension AlbumViewController {
             activityIndicator.isHidden = true
             activityIndicator.stopAnimating()
             
-            // create progressView and update
-            // TODO: progressView
-            //progressView = UIProgressView(progressViewStyle: .bar)
+            // show progressView..with current download progress
             if let progress = downloadProgress() {
                 
                 progressView.alpha = 1.0
                 progressView?.progress = progress
             }
             
-            // add bbi's to bars
-            // TODO: progressView
-            //let progressBbi = UIBarButtonItem(customView: progressView!)
-            //setToolbarItems([flexBbi, progressBbi, flexBbi], animated: true)
+            // nil all bbi's on bars
+            setToolbarItems(nil, animated: true)
+            navigationItem.setLeftBarButton(nil, animated: true)
             navigationItem.setRightBarButton(nil, animated: true)
         case .normal:
             /*
@@ -734,6 +740,8 @@ extension AlbumViewController {
                                             target: self,
                                             action: #selector(reloadBbiPressed(_:)))
             setToolbarItems([flexBbi, reloadBbi], animated: true)
+            
+            navigationItem.setLeftBarButton(nil, animated: true)
         case .editing:
             /*
              Editing. VC has been placed in editing mode
@@ -745,6 +753,9 @@ extension AlbumViewController {
                                        action: #selector(trashBbiPressed(_:)))
             trashBbi.isEnabled = false
             setToolbarItems([flexBbi, trashBbi], animated: true)
+            
+            // hide back button..
+            navigationItem.setLeftBarButton(placeholdeBbi, animated: true)
         case .imagePreview:
             /*
              Image Preview. Flicks are presented in a scrollView
@@ -758,6 +769,9 @@ extension AlbumViewController {
 
             // nil toolbar bbi's
             setToolbarItems(nil, animated: true)
+            
+            // hide back button..
+            navigationItem.setLeftBarButton(placeholdeBbi, animated: true)
         }
     }
     
