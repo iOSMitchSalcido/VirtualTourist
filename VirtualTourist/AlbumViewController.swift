@@ -7,8 +7,7 @@
 //
 /*
  About AlbumViewController.swift:
- Handle presentation of an album of flicks (photos) that have been downloaded from Flickr. Flick's are attached to a
- Pin managed object.
+ Handle presentation of an album of flicks (photos) that have been downloaded from Flickr. Flick's are attached to a Pin managed object.
  
 - collectionView for presenting downloaded flicks.
 - scrollView to preview a flick when collectionView cell is tapped.
@@ -59,7 +58,6 @@ class AlbumViewController: UIViewController {
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!  // activity indicator for pre-download status
     var progressView: UIProgressView?                               // bar to indicate download status..in toolbar
     
-
     // ref to trashBbi...needed to enable/disable bbi as flicks are selected/deselected
     var trashBbi: UIBarButtonItem!
     
@@ -87,6 +85,9 @@ class AlbumViewController: UIViewController {
         imagePreviewScrollView.alpha = 0.0
         imagePreviewScrollView.isUserInteractionEnabled = false
 
+        progressView = UIProgressView(progressViewStyle: .bar)
+        progressView?.progress = 0.7
+        
         /*
          Core Data:
          create a fetch request and attached to frc
@@ -147,7 +148,7 @@ class AlbumViewController: UIViewController {
         }
     }
     
-    // handle collectionView layout
+    // handle collectionView layout and progressView
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         
@@ -161,8 +162,25 @@ class AlbumViewController: UIViewController {
         // create/set itemSize for cell
         let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (CELLS_PER_ROW - 1.0) * CELL_SPACING
         flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,                                     height: widthAvailableForCellsInRow / CELLS_PER_ROW)
+        
+        // update progressView to correct postion on navBar
+        if let navBar = navigationController?.navigationBar,
+            let _ = progressView {
+            
+            progressView?.removeFromSuperview()
+            progressView?.frame.size.width = navBar.frame.size.width
+            progressView?.frame.origin.x = 0.0
+            progressView?.frame.origin.y = navBar.frame.size.height - (progressView?.frame.height)!
+            navBar.addSubview(progressView!)
+        }
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        progressView?.removeFromSuperview()
+    }
+    
     // handle view editing
     override func setEditing(_ editing: Bool, animated: Bool) {
         super.setEditing(editing, animated: animated)
@@ -648,7 +666,8 @@ extension AlbumViewController {
         */
         
         // nil progressView..will be created if downloading
-        progressView = nil
+        // TODO: progressView
+        //progressView = nil
         
         // flexBbi...used is various modes below...
         let flexBbi = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
@@ -678,14 +697,16 @@ extension AlbumViewController {
             activityIndicator.stopAnimating()
             
             // create progressView and update
-            progressView = UIProgressView(progressViewStyle: .bar)
+            // TODO: progressView
+            //progressView = UIProgressView(progressViewStyle: .bar)
             if let progress = downloadProgress() {
                 progressView?.progress = progress
             }
             
             // add bbi's to bars
-            let progressBbi = UIBarButtonItem(customView: progressView!)
-            setToolbarItems([flexBbi, progressBbi, flexBbi], animated: true)
+            // TODO: progressView
+            //let progressBbi = UIBarButtonItem(customView: progressView!)
+            //setToolbarItems([flexBbi, progressBbi, flexBbi], animated: true)
             navigationItem.setRightBarButton(nil, animated: true)
         case .normal:
             /*
@@ -892,7 +913,7 @@ extension AlbumViewController {
         /*
          finish downloading flicks for a Pin that has flicks with nil image data
          ..this condition might occur if app was terminated during a download, leaving
-         flicks with nil image data that still needs to be downloaded.
+         flicks with nil image data that still needs download.
         */
         
         // perform on private context/queue
