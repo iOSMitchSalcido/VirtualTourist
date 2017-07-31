@@ -56,7 +56,7 @@ class AlbumViewController: UIViewController {
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!      // ref to CV flowLayout
     @IBOutlet weak var imagePreviewScrollView: UIScrollView!        // scrollView for flick preview
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!  // activity indicator for pre-download status
-    var progressView: UIProgressView?                               // bar to indicate download status..in toolbar
+    var progressView: UIProgressView!                               // bar to indicate download status..in toolbar
     
     // ref to trashBbi...needed to enable/disable bbi as flicks are selected/deselected
     var trashBbi: UIBarButtonItem!
@@ -85,8 +85,11 @@ class AlbumViewController: UIViewController {
         imagePreviewScrollView.alpha = 0.0
         imagePreviewScrollView.isUserInteractionEnabled = false
 
+        // progressView. Will be showing and animating out, postioned on navBar in viewWillLayoutSubviews
+        // to accomodate view rotation
         progressView = UIProgressView(progressViewStyle: .bar)
-        progressView?.progress = 0.7
+        progressView.progress = 0.7
+        progressView.alpha = 0.0
         
         /*
          Core Data:
@@ -164,20 +167,19 @@ class AlbumViewController: UIViewController {
         flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,                                     height: widthAvailableForCellsInRow / CELLS_PER_ROW)
         
         // update progressView to correct postion on navBar
-        if let navBar = navigationController?.navigationBar,
-            let _ = progressView {
+        if let navBar = navigationController?.navigationBar {
             
-            progressView?.removeFromSuperview()
-            progressView?.frame.size.width = navBar.frame.size.width
-            progressView?.frame.origin.x = 0.0
-            progressView?.frame.origin.y = navBar.frame.size.height - (progressView?.frame.height)!
-            navBar.addSubview(progressView!)
+            progressView.frame.size.width = navBar.frame.size.width
+            progressView.frame.origin.x = 0.0
+            progressView.frame.origin.y = navBar.frame.size.height - progressView.frame.height
+            navBar.addSubview(progressView)
         }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         
+        // remove progressView from navBar...otherwise will be visible in invoking VC
         progressView?.removeFromSuperview()
     }
     
@@ -526,6 +528,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
              Test download progress. When at least one download has been received, remove
              from preDownloading and place into .downloading mode
             */
+            
             if let progress = downloadProgress(),
                 progress > 0.0 {
                 
@@ -538,15 +541,12 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
              test downloadProgress and update progressView. When download has been complete, remove
              from .download mode and place in .normal mode
             */
-            if let progressView = progressView,
-                let progress = downloadProgress() {
+            if let progress = downloadProgress() {
                 
-                if progress < DOWNLOAD_COMPLETE {
-                    // download still in progress (progress < 1.0)..update progress
-                    progressView.setProgress(progress, animated: true)
-                }
-                else {
-                    // done downloading (progress >= 1.0)
+                progressView.setProgress(progress, animated: true)
+                
+                // done downloading (progress >= 1.0)
+                if progress >= DOWNLOAD_COMPLETE {
                     
                     // return to normal mode
                     mode = .normal
@@ -557,6 +557,11 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                     
                     // reload table...
                     collectionView.reloadData()
+                    
+                    //animate out progressView
+                    UIView.animate(withDuration: 0.3) {
+                        self.progressView.alpha = 0.0
+                    }
                 }
             }
         default:
@@ -700,6 +705,8 @@ extension AlbumViewController {
             // TODO: progressView
             //progressView = UIProgressView(progressViewStyle: .bar)
             if let progress = downloadProgress() {
+                
+                progressView.alpha = 1.0
                 progressView?.progress = progress
             }
             
