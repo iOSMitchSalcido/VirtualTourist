@@ -176,7 +176,7 @@ class AlbumViewController: UIViewController {
         let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (CELLS_PER_ROW - 1.0) * CELL_SPACING
         flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,                                     height: widthAvailableForCellsInRow / CELLS_PER_ROW)
         
-        // update progressView frame to postion on navBar
+        // update progressView frame on navBar
         if let navBar = navigationController?.navigationBar {
             
             progressView.frame.size.width = navBar.frame.size.width
@@ -392,7 +392,7 @@ extension AlbumViewController: UICollectionViewDataSource {
         // retieve flick
         let flick = fetchedResultsController.object(at: indexPath)
         
-        // test if cell is selected for deletion
+        // test if cell is selected for deletion...show/hide checkmark
         cell.selectedImageView.isHidden = !selectedCellsIndexPaths.contains(indexPath)
         
         // test if editing..dim to indicate editing
@@ -434,8 +434,8 @@ extension AlbumViewController: UICollectionViewDelegate {
 
         /*
          delegate method handles:
-            - If vc in currently in .normal mode, placing vc into imagePreview mode when a cell is tapped
-            - If in .editing mode, selecting/deselecting a cell/flick for deletion
+            - If vc in currently in .normal mode, place vc into imagePreview mode when a cell is tapped
+            - If in .editing mode, handle selecting/deselecting a cell/flick for deletion
         */
         
         switch mode {
@@ -498,6 +498,10 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         
+        /*
+         handle updates to Pin/Flicks and update UI
+        */
+        
         switch type {
         case .insert:
             collectionView.reloadData()
@@ -554,7 +558,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                 
                 progressView.setProgress(progress, animated: true)
                 
-                // done downloading (progress >= 1.0)
+                // downloading complete (progress >= 1.0)
                 if progress >= DOWNLOAD_COMPLETE {
                     
                     // return to normal mode
@@ -567,7 +571,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                     // reload table...
                     collectionView.reloadData()
                     
-                    //animate out progressView
+                    // animate out progressView
                     UIView.animate(withDuration: 0.3) {
                         self.progressView.alpha = 0.0
                     }
@@ -611,7 +615,7 @@ extension AlbumViewController {
         }
         
         // return ratio
-        return downloadCount / Float(fetchedObjects.count)
+        return downloadCount / count
     }
     
     // load imagePreviewScrollView
@@ -814,10 +818,12 @@ extension AlbumViewController {
                         try self.stack.context.save()
                     } catch let error {
                         print("error: \(error.localizedDescription)")
+                        return
                     }
                 }
             } catch let error {
                 print("error: \(error.localizedDescription)")
+                return
             }
             
             // begin download of new album using API call
@@ -856,10 +862,12 @@ extension AlbumViewController {
                             try self.stack.context.save()
                         } catch let error {
                             print("error: \(error.localizedDescription)")
+                            return
                         }
                     }
                 } catch let error {
                     print("error: \(error.localizedDescription)")
+                    return
                 }
 
                 /*
@@ -901,10 +909,12 @@ extension AlbumViewController {
                                         try self.stack.context.save()
                                     } catch let error {
                                         print("error: \(error.localizedDescription)")
+                                        return
                                     }
                                 }
                             } catch let error {
                                 print("error: \(error.localizedDescription)")
+                                return
                             }
                         }
                     }
@@ -920,13 +930,16 @@ extension AlbumViewController {
                                 try self.stack.context.save()
                             } catch let error {
                                 print("error: \(error.localizedDescription)")
+                                return
                             }
                         }
                     } catch let error {
                         print("error: \(error.localizedDescription)")
+                        return
                     }
                 } catch {
                     print("error: \(error.localizedDescription)")
+                    return
                 }
             }
         }
@@ -980,10 +993,12 @@ extension AlbumViewController {
                                     try self.stack.context.save()
                                 } catch let error {
                                     print("error: \(error.localizedDescription)")
+                                    return
                                 }
                             }
                         } catch let error {
                             print("error: \(error.localizedDescription)")
+                            return
                         }
                     }
                 }
@@ -999,13 +1014,16 @@ extension AlbumViewController {
                             try self.stack.context.save()
                         } catch let error {
                             print("error: \(error.localizedDescription)")
+                            return
                         }
                     }
                 } catch let error {
                     print("error: \(error.localizedDescription)")
+                    return
                 }
             } catch {
                 print("error: \(error.localizedDescription)")
+                return
             }
         }
     }
