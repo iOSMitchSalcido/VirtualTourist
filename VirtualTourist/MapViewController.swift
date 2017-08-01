@@ -25,7 +25,6 @@ class MapViewController: UIViewController {
     
     // CoreData
     var stack: CoreDataStack!               // ref to CoreDataStack
-    var context: NSManagedObjectContext!    // ref to managedObjectContext
     
     // ref to search bbi
     var searchBbi: UIBarButtonItem!
@@ -41,7 +40,6 @@ class MapViewController: UIViewController {
 
         // retrieve stack/context
         stack = CoreDataStack("VirtualTouristModel")
-        context = stack.context
         
         // core location. Determine auth..request auth
         // .. searchBbi creation is handled in coreLocation delegate
@@ -63,7 +61,7 @@ class MapViewController: UIViewController {
         // debug code ...looking for unowned flicks
         let flickFr: NSFetchRequest<Flick> = Flick.fetchRequest()
         do {
-            let flicksResults = try context.fetch(flickFr)
+            let flicksResults = try stack.context.fetch(flickFr)
             
             for flick in  flicksResults {
                 if flick.pin == nil {
@@ -87,7 +85,7 @@ class MapViewController: UIViewController {
         let request: NSFetchRequest<Pin> = Pin.fetchRequest()
         do {
             // perform fetch
-            let results = try context.fetch(request)
+            let results = try stack.context.fetch(request)
             
             // iterate through results
             for pin in results {
@@ -192,18 +190,18 @@ class MapViewController: UIViewController {
                 }
                 
                 // create coordinate MO
-                let newCoord = Coordinate(context: self.context)
+                let newCoord = Coordinate(context: self.stack.context)
                 newCoord.latitude = Double(coord.latitude)
                 newCoord.longitude = Double(coord.longitude)
                 
                 // create Pin MO
-                let pin = Pin(context: self.context)
+                let pin = Pin(context: self.stack.context)
                 pin.coordinate = newCoord
                 pin.title = locationTitle
                 pin.isDownloading = true
 
                 do {
-                    try self.context.save()
+                    try self.stack.context.save()
                     
                     // create/config annot, add to mapView
                     let annot = VTAnnotation()
