@@ -308,21 +308,29 @@ extension MapViewController: MKMapViewDelegate {
                 mapView.removeAnnotation(annotation)
                 annotation.pin = nil
 
-                self.stack.container.performBackgroundTask() { (privateContext) in
-                    
-                    // !! inconsistant Pin deletion unless merge policy is set
-                    privateContext.mergePolicy = NSMergePolicy.overwrite
+                // perform on private context/queue
+                let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+                privateContext.parent = self.stack.context
+                privateContext.perform {
                     
                     let privatePin = privateContext.object(with: pin.objectID) as! Pin
                     privateContext.delete(privatePin)
+                    
+                    // save
                     do {
+                        try privateContext.save()
                         
-                        if privateContext.hasChanges {
-                            try privateContext.save()
+                        self.stack.context.performAndWait {
+                            do {
+                                try self.stack.context.save()
+                            } catch let error {
+                                print("error: \(error.localizedDescription)")
+                                return
+                            }
                         }
-                    } catch {
-                        // pin deletion error during save
-                        self.presentAlertForError(VTError.coreData("Unable to delete Pin."))
+                    } catch let error {
+                        print("error: \(error.localizedDescription)")
+                        return
                     }
                 }
             }
