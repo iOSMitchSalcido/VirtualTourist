@@ -142,86 +142,7 @@ class MapViewController: UIViewController {
             // get touch point and coord in mapView
             let touchPoint = sender.location(in: mapView)
             let coord = mapView.convert(touchPoint, toCoordinateFrom: mapView)
-
-            // reverse geocode coord
-            let location = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
-            let geoCoder = CLGeocoder()
-            geoCoder.reverseGeocodeLocation(location) {
-                (placemarks, error) in
-                
-                // test for geocode errors...look at most pertinent errors
-                if let error = error as? CLError.Code {
-                    
-                    // error...present in alert with message
-                    switch error {
-                    case .locationUnknown:
-                        self.presentAlertForError(VTError.locationError("Unknown location"))
-                    case .network:
-                        self.presentAlertForError(VTError.locationError("Network unavailable"))
-                    case .geocodeFoundNoResult:
-                        self.presentAlertForError(VTError.locationError("Geocode yielded no result"))
-                    default:
-                        self.presentAlertForError(VTError.locationError("Unknown geocoding error"))
-                    }
-                    return
-                }
-                
-                // test for valid placemark found in reverse geocoding
-                guard let placemark = placemarks?.first else {
-                    self.presentAlertForError(VTError.locationError("Geocoding error. Possible network issue or offline"))
-                    return
-                }
-                
-                // valid placemark info.. continue and create an annot for mapView
-                
-                // sift placemark info for pertinent annot title..default title is "Location"
-                var locationTitle = "Location"
-                if let locality = placemark.locality {
-                    locationTitle = locality
-                }
-                else if let administrativeArea = placemark.administrativeArea {
-                    locationTitle = administrativeArea
-                }
-                else if let country = placemark.country {
-                    locationTitle = country
-                }
-                else if let ocean = placemark.ocean {
-                    locationTitle = ocean
-                }
-                
-                // create coordinate MO
-                let newCoord = Coordinate(context: self.stack.context)
-                newCoord.latitude = Double(coord.latitude)
-                newCoord.longitude = Double(coord.longitude)
-                
-                // create Pin MO
-                let pin = Pin(context: self.stack.context)
-                pin.coordinate = newCoord
-                pin.title = locationTitle
-                pin.isDownloading = true
-
-                do {
-                    try self.stack.context.save()
-                    
-                    // create/config annot, add to mapView
-                    let annot = VTAnnotation()
-                    annot.coordinate = coord
-                    annot.title = locationTitle
-                    annot.pin = pin
-                    DispatchQueue.main.async {
-                        self.mapView.addAnnotation(annot)
-                    }
-                    
-                    // download new album
-                    self.downloadAlbumForPin(pin, stack: self.stack)
-
-                } catch {
-                    // bad Pin save
-                    DispatchQueue.main.async {
-                        self.presentAlertForError(VTError.coreData("Unable to create/save Pin"))
-                    }
-                }
-            }
+            placePinAtCoordinate(coord)
         default:
             break
         }
@@ -380,6 +301,94 @@ extension MapViewController: CLLocationManagerDelegate {
             navigationItem.rightBarButtonItem = searchBbi
         default:
             break
+        }
+    }
+}
+
+// helper functions
+extension MapViewController {
+    
+    // place a new Pin at the coordinate
+    func placePinAtCoordinate(_ coord: CLLocationCoordinate2D) {
+        
+        // reverse geocode coord
+        let location = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
+        let geoCoder = CLGeocoder()
+        geoCoder.reverseGeocodeLocation(location) {
+            (placemarks, error) in
+            
+            // test for geocode errors...look at most pertinent errors
+            if let error = error as? CLError.Code {
+                
+                // error...present in alert with message
+                switch error {
+                case .locationUnknown:
+                    self.presentAlertForError(VTError.locationError("Unknown location"))
+                case .network:
+                    self.presentAlertForError(VTError.locationError("Network unavailable"))
+                case .geocodeFoundNoResult:
+                    self.presentAlertForError(VTError.locationError("Geocode yielded no result"))
+                default:
+                    self.presentAlertForError(VTError.locationError("Unknown geocoding error"))
+                }
+                return
+            }
+            
+            // test for valid placemark found in reverse geocoding
+            guard let placemark = placemarks?.first else {
+                self.presentAlertForError(VTError.locationError("Geocoding error. Possible network issue or offline"))
+                return
+            }
+            
+            // valid placemark info.. continue and create an annot for mapView
+            
+            // sift placemark info for pertinent annot title..default title is "Location"
+            var locationTitle = "Location"
+            if let locality = placemark.locality {
+                locationTitle = locality
+            }
+            else if let administrativeArea = placemark.administrativeArea {
+                locationTitle = administrativeArea
+            }
+            else if let country = placemark.country {
+                locationTitle = country
+            }
+            else if let ocean = placemark.ocean {
+                locationTitle = ocean
+            }
+            
+            // create coordinate MO
+            let newCoord = Coordinate(context: self.stack.context)
+            newCoord.latitude = Double(coord.latitude)
+            newCoord.longitude = Double(coord.longitude)
+            
+            // create Pin MO
+            let pin = Pin(context: self.stack.context)
+            pin.coordinate = newCoord
+            pin.title = locationTitle
+            pin.isDownloading = true
+            
+            do {
+                try self.stack.context.save()
+                
+                // create/config annot, add to mapView
+                let annot = VTAnnotation()
+                annot.coordinate = coord
+                annot.title = locationTitle
+                annot.pin = pin
+                DispatchQueue.main.async {
+                    self.mapView.addAnnotation(annot)
+                }
+                
+                // download new album
+                self.downloadAlbumForPin(pin, stack: self.stack)
+                
+            } catch {
+                // bad Pin save
+                DispatchQueue.main.async {
+                    self.presentAlertForError(VTError.coreData("Unable to create/save Pin"))
+                }
+            }
         }
     }
 }
