@@ -87,9 +87,8 @@ extension UIViewController {
 // related to core data and Flick downloading
 extension UIViewController {
     
+    // download album of flicks for a Pin
     func downloadAlbumForPin(_ pin: Pin, stack: CoreDataStack) {
-        
-        print("downloadAlbumForPin")
         
         // perform on private context/queue
         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
@@ -238,6 +237,88 @@ extension UIViewController {
                     print("error: \(error.localizedDescription)")
                     return
                 }
+            }
+        }
+    }
+    
+    func resumeAlbumDownloadForPin(_ pin: Pin, stack: CoreDataStack) {
+        
+        /*
+         finish downloading flicks for a Pin that has flicks with nil image data
+         ..this condition might occur if app was terminated during a download, leaving
+         flicks with nil image data that still needs download.
+         */
+        
+        // perform on private context/queue
+        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        privateContext.parent = stack.context
+        privateContext.perform {
+            
+            // retrieve pin, set isDownloading
+            let pin = privateContext.object(with: pin.objectID) as! Pin
+            pin.isDownloading = true
+            
+            // request
+            let request: NSFetchRequest<Flick> = Flick.fetchRequest()
+            let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
+            let predicate = NSPredicate(format: "pin == %@", pin)
+            request.predicate = predicate
+            request.sortDescriptors = [sort]
+            
+            // perform fetch
+            do {
+                let flicks = try privateContext.fetch(request)
+                
+                // iterate, retrieve image data
+                for flick in flicks {
+                    
+                    if flick.image == nil,
+                        let urlString = flick.urlString,
+                        let url = URL(string: urlString),
+                        let imageData = NSData(contentsOf: url) {
+                        
+                        flick.image = imageData
+                        
+                        // save
+                        do {
+                            try privateContext.save()
+                            
+                            stack.context.performAndWait {
+                                do {
+                                    try stack.context.save()
+                                } catch let error {
+                                    print("error: \(error.localizedDescription)")
+                                    return
+                                }
+                            }
+                        } catch let error {
+                            print("error: \(error.localizedDescription)")
+                            return
+                        }
+                    }
+                }
+                // done downloading
+                pin.isDownloading = false
+                
+                // save
+                do {
+                    try privateContext.save()
+                    
+                    stack.context.performAndWait {
+                        do {
+                            try stack.context.save()
+                        } catch let error {
+                            print("error: \(error.localizedDescription)")
+                            return
+                        }
+                    }
+                } catch let error {
+                    print("error: \(error.localizedDescription)")
+                    return
+                }
+            } catch {
+                print("error: \(error.localizedDescription)")
+                return
             }
         }
     }

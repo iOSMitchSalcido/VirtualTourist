@@ -60,6 +60,7 @@ class MapViewController: UIViewController {
             break
         }
         
+        // debug code ...looking for unowned flicks
         let flickFr: NSFetchRequest<Flick> = Flick.fetchRequest()
         do {
             let flicksResults = try context.fetch(flickFr)
@@ -103,7 +104,11 @@ class MapViewController: UIViewController {
                     annot.pin = pin
                     annotations.append(annot)
                 }
-                pin.isDownloading = false
+                
+                // test if download was completed for Pin..resume if not complete
+                if !pin.downloadComplete {
+                    resumeAlbumDownloadForPin(pin, stack: stack)
+                }
             }
         } catch {
             // fetch error

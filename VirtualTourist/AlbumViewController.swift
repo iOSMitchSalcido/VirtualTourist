@@ -128,7 +128,6 @@ class AlbumViewController: UIViewController {
                 isDownloading, flick count = 0
              2) downloading:
                 isDownloading, flick count > 0
-                !isDownloading, !downloadComplete ..need to complete download
              3) normal
              */
             
@@ -139,11 +138,6 @@ class AlbumViewController: UIViewController {
             else if (annotation.pin?.isDownloading)! && !(fetchedResultsController.fetchedObjects?.isEmpty)! {
                 // pin is downloading, flicks have been retrieved
                 mode = .downloading
-            }
-            else if !(annotation.pin?.isDownloading)! && !(annotation.pin?.downloadComplete)! {
-                // not downloading and incomplete download..
-                mode = .downloading
-                continueFlickDownload() // continue downloading any unloaded flicks
             }
             else {
                 // complete or no flicks
@@ -319,6 +313,17 @@ class AlbumViewController: UIViewController {
          Present an alert/proceed if flick count > 0
         */
         
+        // declare function to reload album with new flicks
+        func reloadAlbum() {
+            
+            // configure UI
+            mode = .preDownloading
+            configureBars()
+            
+            // download new album
+            downloadAlbumForPin(annotation.pin!, stack: stack)
+        }
+        
         // present proceed.cancel alert..about to delete all flicks
         if (fetchedResultsController.fetchedObjects?.count)! > 0 {
             
@@ -326,7 +331,7 @@ class AlbumViewController: UIViewController {
                                       message: "Delete all flicks and replace with newly downloaded album ?") {
                                         (UIAlertAction) in
                                         
-                                        self.reloadAlbum()
+                                        reloadAlbum()
             }
         }
         else {
@@ -779,104 +784,6 @@ extension AlbumViewController {
             
             // hide back button..
             navigationItem.setLeftBarButton(placeholdeBbi, animated: true)
-        }
-    }
-    
-    // reload album with new flicks
-    func reloadAlbum() {
-        
-        /*
-         Reload a new set of flicks into album...current flicks are removed
-        */
-        
-        // configure UI
-        mode = .preDownloading
-        configureBars()
-        
-        // download new album
-        downloadAlbumForPin(annotation.pin!, stack: stack)
-    }
-    
-    // continue downloading flicks
-    func continueFlickDownload() {
-        
-        /*
-         finish downloading flicks for a Pin that has flicks with nil image data
-         ..this condition might occur if app was terminated during a download, leaving
-         flicks with nil image data that still needs download.
-        */
-        
-        // perform on private context/queue
-        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-        privateContext.parent = stack.context
-        privateContext.perform {
-            
-            // retrieve pin, set isDownloading
-            let pin = privateContext.object(with: (self.annotation.pin?.objectID)!) as! Pin
-            pin.isDownloading = true
-            
-            // request
-            let request: NSFetchRequest<Flick> = Flick.fetchRequest()
-            let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
-            let predicate = NSPredicate(format: "pin == %@", pin)
-            request.predicate = predicate
-            request.sortDescriptors = [sort]
-            
-            // perform fetch
-            do {
-                let flicks = try privateContext.fetch(request)
-                
-                // iterate, retrieve image data
-                for flick in flicks {
-                    
-                    if flick.image == nil,
-                        let urlString = flick.urlString,
-                        let url = URL(string: urlString),
-                        let imageData = NSData(contentsOf: url) {
-                        
-                        flick.image = imageData
-                        
-                        // save
-                        do {
-                            try privateContext.save()
-                            
-                            self.stack.context.performAndWait {
-                                do {
-                                    try self.stack.context.save()
-                                } catch let error {
-                                    print("error: \(error.localizedDescription)")
-                                    return
-                                }
-                            }
-                        } catch let error {
-                            print("error: \(error.localizedDescription)")
-                            return
-                        }
-                    }
-                }
-                // done downloading
-                pin.isDownloading = false
-                
-                // save
-                do {
-                    try privateContext.save()
-                    
-                    self.stack.context.performAndWait {
-                        do {
-                            try self.stack.context.save()
-                        } catch let error {
-                            print("error: \(error.localizedDescription)")
-                            return
-                        }
-                    }
-                } catch let error {
-                    print("error: \(error.localizedDescription)")
-                    return
-                }
-            } catch {
-                print("error: \(error.localizedDescription)")
-                return
-            }
         }
     }
 }
