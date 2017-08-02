@@ -103,10 +103,7 @@ class MapViewController: UIViewController {
                     annotations.append(annot)
                 }
                 
-                // test if download was completed for Pin..resume if not complete
-                if !pin.downloadComplete {
-                    resumeAlbumDownloadForPin(pin, stack: stack)
-                }
+                downloadAlbumForPin(pin, stack: stack)
             }
         } catch {
             // fetch error
@@ -126,6 +123,7 @@ class MapViewController: UIViewController {
     // long press GR
     @IBAction func longPressDetected(_ sender: UILongPressGestureRecognizer) {
         
+        print("longPressDetected")
         /*
          Info:
          Handle long press GR. This function handles the detection of a long press. The touch point is identified
@@ -136,8 +134,11 @@ class MapViewController: UIViewController {
         
         switch sender.state {
         case .began:
-            
-            // begin long press detection
+            print("began")
+        case .changed:
+            print("changed")
+        case .ended:
+            print("ended")
             
             // get touch point and coord in mapView
             let touchPoint = sender.location(in: mapView)

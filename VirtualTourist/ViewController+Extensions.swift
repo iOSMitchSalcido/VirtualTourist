@@ -95,6 +95,8 @@ extension UIViewController {
         privateContext.parent = stack.context
         privateContext.perform {
             
+            print("downloadAlbumForPin - privateQueueu")
+            
             // retrieve pin. Indicate downloading
             let pin = privateContext.object(with: pin.objectID) as! Pin
             let flicks = pin.flicks
@@ -253,6 +255,8 @@ extension UIViewController {
         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         privateContext.parent = stack.context
         privateContext.perform {
+            
+            print("resumeAlbumDownloadForPin - privateQueue")
             
             // retrieve pin, set isDownloading
             let pin = privateContext.object(with: pin.objectID) as! Pin
