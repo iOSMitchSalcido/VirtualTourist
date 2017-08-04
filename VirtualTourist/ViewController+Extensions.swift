@@ -94,9 +94,7 @@ extension UIViewController {
         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         privateContext.parent = stack.context
         privateContext.perform {
-            
-            print("downloadAlbumForPin - privateQueueu")
-            
+                        
             // retrieve pin. Indicate downloading
             let pin = privateContext.object(with: pin.objectID) as! Pin
             let flicks = pin.flicks
@@ -127,6 +125,8 @@ extension UIViewController {
             // begin download of new album using API call
             FlickrAPI().createFlickrAlbumForPin(pin, page: nil) {
                 (data, error) in
+                
+                print("createFlickrAlbumForPin: \(pin.title!)")
                 
                 // test error, show alert if error
                 guard error == nil else {
