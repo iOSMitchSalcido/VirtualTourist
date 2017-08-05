@@ -90,67 +90,42 @@ extension UIViewController {
     // download album of flicks for a Pin
     func downloadAlbumForPin(_ pin: Pin, stack: CoreDataStack) {
         
-        // perform on private context/queue
-        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-        privateContext.parent = stack.context
-        privateContext.perform {
-                        
-            // retrieve pin. Indicate downloading
-            let pin = privateContext.object(with: pin.objectID) as! Pin
-            let flicks = pin.flicks
-            pin.isDownloading = true
+        // begin download of new album using API call
+        FlickrAPI().createFlickrAlbumForPin(pin, page: nil) {
+            (data, error) in
             
-            // delete all flicks
-            for flick in flicks! {
-                privateContext.delete(flick as! NSManagedObject)
-            }
-            
-            // save..capture flick deletion and isDownloading set to false
-            do {
-                try privateContext.save()
-                
-                stack.context.performAndWait {
-                    do {
-                        try stack.context.save()
-                    } catch let error {
-                        print("error: \(error.localizedDescription)")
-                        return
-                    }
+            // test error, show alert if error
+            guard error == nil else {
+                DispatchQueue.main.async {
+                    self.presentAlertForError(error!)
                 }
-            } catch let error {
-                print("error: \(error.localizedDescription)")
                 return
             }
             
-            // begin download of new album using API call
-            FlickrAPI().createFlickrAlbumForPin(pin, page: nil) {
-                (data, error) in
-                
-                print("createFlickrAlbumForPin: \(pin.title!)")
-                
-                // test error, show alert if error
-                guard error == nil else {
-                    DispatchQueue.main.async {
-                        self.presentAlertForError(error!)
-                    }
-                    return
+            // test data, show alert if bad data
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    self.presentAlertForError(VTError.networkError("Bad data returned from Flickr."))
                 }
+                return
+            }
+            
+            let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+            privateContext.parent = stack.context
+            privateContext.perform {
                 
-                // test data, show alert if bad data
-                guard let data = data else {
-                    DispatchQueue.main.async {
-                        self.presentAlertForError(VTError.networkError("Bad data returned from Flickr."))
-                    }
-                    return
-                }
+                // retrieve pin. Indicate downloading
+                let pin = privateContext.object(with: pin.objectID) as! Pin
+                //let flicks = pin.flicks
+                pin.isDownloading = true
                 
-                // create flicks..assign urlString
+                // create flicks, assign urlString, add to pin
                 for urlString in data {
                     let flick = Flick(context: privateContext)
                     flick.urlString = urlString
                     pin.addToFlicks(flick)
                 }
-                
+
                 // save...will cause frc to repopulate cv with default image
                 do {
                     try privateContext.save()
@@ -243,6 +218,7 @@ extension UIViewController {
         }
     }
     
+    // resume download
     func resumeAlbumDownloadForPin(_ pin: Pin, stack: CoreDataStack) {
         
         /*
@@ -255,8 +231,6 @@ extension UIViewController {
         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         privateContext.parent = stack.context
         privateContext.perform {
-            
-            print("resumeAlbumDownloadForPin - privateQueue")
             
             // retrieve pin, set isDownloading
             let pin = privateContext.object(with: pin.objectID) as! Pin

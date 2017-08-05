@@ -324,13 +324,43 @@ class AlbumViewController: UIViewController {
             downloadAlbumForPin(annotation.pin!, stack: stack)
         }
         
-        // present proceed.cancel alert..about to delete all flicks
+        // present proceed cancel alert if flicks are present..about to delete all flicks
         if (fetchedResultsController.fetchedObjects?.count)! > 0 {
             
             presentProceedCancelAlert(title: "Load new album",
                                       message: "Delete all flicks and replace with newly downloaded album ?") {
                                         (UIAlertAction) in
                                         
+                                        // delete flicks on private queue
+                                        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+                                        privateContext.parent = self.stack.context
+                                        privateContext.perform {
+                                            
+                                            let pin = privateContext.object(with: (self.annotation.pin?.objectID)!) as! Pin
+                                            let flicks = pin.flicks
+
+                                            // delete all flicks
+                                            for flick in flicks! {
+                                                privateContext.delete(flick as! NSManagedObject)
+                                            }
+                                            
+                                            // save..capture flick deletion
+                                            do {
+                                                try privateContext.save()
+                                                
+                                                self.stack.context.performAndWait {
+                                                    do {
+                                                        try self.stack.context.save()
+                                                    } catch let error {
+                                                        print("error: \(error.localizedDescription)")
+                                                        return
+                                                    }
+                                                }
+                                            } catch let error {
+                                                print("error: \(error.localizedDescription)")
+                                                return
+                                            }
+                                        }
                                         reloadAlbum()
             }
         }
@@ -338,10 +368,10 @@ class AlbumViewController: UIViewController {
             reloadAlbum()
         }
     }
-    
+ 
     // handle sharing flick
     func shareFlickBbiPressed(_ sender: UIBarButtonItem) {
-        
+ 
         /*
          function to handle sharing a flick. The flick is retrieved from the imagePreviewScrollView
          and presented in a UIActivityViewVC for sharing.
