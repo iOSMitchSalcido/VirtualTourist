@@ -32,6 +32,9 @@ class MapViewController: UIViewController {
     // location manager
     var locationManager: CLLocationManager!
     
+    // ref for tracking/dragging Pin that was just placed
+    var dragPin: VTAnnotation?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -103,6 +106,7 @@ class MapViewController: UIViewController {
                     annotations.append(annot)
                 }
                 
+                // test if flicks have been downloaded for pin..resume if still some nil flicks
                 if !pin.downloadComplete {
                     resumeAlbumDownloadForPin(pin, stack: stack)
                 }
@@ -133,18 +137,26 @@ class MapViewController: UIViewController {
          Upon successful reverse geocoding of touchpoint, an annot is added to mapView.
         */
         
+        let touchPoint = sender.location(in: mapView)
+        let coordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
+        
         switch sender.state {
         case .began:
-            print("began")
+            // create/config annot, add to mapView
+            let annot = VTAnnotation()
+            annot.coordinate = coordinate
+            mapView.addAnnotation(annot)
+            dragPin = annot
         case .changed:
-            print("changed")
+            if let _ = dragPin {
+                dragPin?.coordinate = coordinate
+            }
         case .ended:
-            print("ended")
-            
-            // get touch point and coord in mapView
-            let touchPoint = sender.location(in: mapView)
-            let coord = mapView.convert(touchPoint, toCoordinateFrom: mapView)
-            placePinAtCoordinate(coord)
+            if let _ = dragPin {
+                dragPin?.coordinate = coordinate
+                assignPinToAnnotation(dragPin!)
+                dragPin = nil
+            }
         default:
             break
         }
@@ -310,11 +322,13 @@ extension MapViewController: CLLocationManagerDelegate {
 // helper functions
 extension MapViewController {
     
-    // place a new Pin at the coordinate
-    func placePinAtCoordinate(_ coord: CLLocationCoordinate2D) {
+    // assign a Pin to annotation
+    func assignPinToAnnotation(_ annotation: VTAnnotation) {
+        
+        let coordinate = annotation.coordinate
         
         // reverse geocode coord
-        let location = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
+        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         let geoCoder = CLGeocoder()
         geoCoder.reverseGeocodeLocation(location) {
             (placemarks, error) in
@@ -361,33 +375,29 @@ extension MapViewController {
             
             // create coordinate MO
             let newCoord = Coordinate(context: self.stack.context)
-            newCoord.latitude = Double(coord.latitude)
-            newCoord.longitude = Double(coord.longitude)
+            newCoord.latitude = Double(coordinate.latitude)
+            newCoord.longitude = Double(coordinate.longitude)
             
             // create Pin MO
             let pin = Pin(context: self.stack.context)
             pin.coordinate = newCoord
             pin.title = locationTitle
-            pin.isDownloading = true
             
+            // save Pin
             do {
                 try self.stack.context.save()
                 
-                // create/config annot, add to mapView
-                let annot = VTAnnotation()
-                annot.coordinate = coord
-                annot.title = locationTitle
-                annot.pin = pin
-                DispatchQueue.main.async {
-                    self.mapView.addAnnotation(annot)
-                }
+                // successful save. Assign title and pin to annotation
+                annotation.title = locationTitle
+                annotation.pin = pin
                 
                 // download new album
                 self.downloadAlbumForPin(pin, stack: self.stack)
                 
             } catch {
-                // bad Pin save
+                // bad Pin save. Remove annot and present error
                 DispatchQueue.main.async {
+                    self.mapView.removeAnnotation(annotation)
                     self.presentAlertForError(VTError.coreData("Unable to create/save Pin"))
                 }
             }
