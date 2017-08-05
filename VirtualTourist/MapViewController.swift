@@ -7,6 +7,13 @@
 //
 /*
  About MapViewController.swift:
+ Handle presentation and placement of drop pins on map.
+ 
+ - MapView for canvas to place pins on
+ - Core Data for persisting pins
+ - Location manager allows user to locate and zoom in on their present location
+ - Long press gesture recognizer for dropping a new pin on map
+ - Left/right accessories on pin callout allows user to either delete pin or navigate into AlbumVC for flick viewing
  */
 
 import UIKit
@@ -19,6 +26,10 @@ class MapViewController: UIViewController {
     let USER_LOCATION_KmACCURACY: CLLocationAccuracy = 5.0  // user location, Km accuracy
     let USER_SPAN_DEGREES: CLLocationDegrees = 0.3          // user location span
     
+    // constant for default location name in event that placemark can't determine location
+    // during reverse geocode.
+    let DEFAULT_LOCATION_TITLE = "Location"
+    
     // view objects
     @IBOutlet weak var mapView: MKMapView!          // ref to mapView
     @IBOutlet weak var titleImageView: UIImageView! // ref to nav titleImageView
@@ -26,10 +37,10 @@ class MapViewController: UIViewController {
     // CoreData
     var stack: CoreDataStack!               // ref to CoreDataStack
     
-    // ref to search bbi
+    // ref to search bbi. Zoom to user's current location when pressed
     var searchBbi: UIBarButtonItem!
     
-    // location manager
+    // location manager. Used to determine user's location
     var locationManager: CLLocationManager!
     
     // ref for tracking/dragging Pin that was just placed
@@ -106,7 +117,7 @@ class MapViewController: UIViewController {
                     annotations.append(annot)
                 }
                 
-                // test if flicks have been downloaded for pin..resume if still some nil flicks
+                // test if flicks have been fully downloaded for pin..resume if still some nil flicks
                 if !pin.downloadComplete {
                     resumeAlbumDownloadForPin(pin, stack: stack)
                 }
@@ -114,6 +125,7 @@ class MapViewController: UIViewController {
         } catch {
             // fetch error
             presentAlertForError(VTError.coreData("Unable to retrieve Pins"))
+            return
         }
         
         // add annotations to mapView
@@ -123,6 +135,7 @@ class MapViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
+        // hide toolbar
         navigationController?.setToolbarHidden(true, animated: true)
     }
     
@@ -130,13 +143,13 @@ class MapViewController: UIViewController {
     @IBAction func longPressDetected(_ sender: UILongPressGestureRecognizer) {
         
         /*
-         Info:
-         Handle long press GR. This function handles the detection of a long press. The touch point is identified
-         in the mapView into a coord. This coord is then used to geocode a placemark for location identification.
-         
-         Upon successful reverse geocoding of touchpoint, an annot is added to mapView.
+         Action for long press gesture.
+         Handle new pin placement and also pin dragging. Pin is placed on beginning of gesture. If user
+         drags pin, then .change updates postion of pin by using a reference to the annotation. At end
+         of gesture, Pin MO is created and assigned to annot.
         */
         
+        // get pin coordinate
         let touchPoint = sender.location(in: mapView)
         let coordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
         
@@ -146,12 +159,18 @@ class MapViewController: UIViewController {
             let annot = VTAnnotation()
             annot.coordinate = coordinate
             mapView.addAnnotation(annot)
+            
+            // ref to annot..used for dragging
             dragPin = annot
         case .changed:
+            
+            // annot has been dragged, update location of annot
             if let _ = dragPin {
                 dragPin?.coordinate = coordinate
             }
         case .ended:
+            
+            // done. assign Pin to annot
             if let _ = dragPin {
                 dragPin?.coordinate = coordinate
                 assignPinToAnnotation(dragPin!)
@@ -164,20 +183,31 @@ class MapViewController: UIViewController {
     
     func searchBbiPressed(_ sender: UIBarButtonItem) {
         
-        // Request a location
+        /*
+         Invoke location request from location manager...delegate method handles zooming to user location.
+        */
+        
         locationManager.requestLocation()
     }
     
     // handle segue prep
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
-        guard segue.identifier == "AlbumSegueID" else {
-            return
+        /*
+         Right accessory on pin callout was tapped... handle configuring AlbumVC
+        */
+        
+        // segue to AlbumVC
+        guard segue.identifier == "AlbumSegueID",
+            let annotation = sender as? VTAnnotation,
+            let pin = annotation.pin else {
+                return
         }
+        
         // set pin and core data in destination controller
         let controller = segue.destination as! AlbumViewController
         controller.stack = stack
-        controller.annotation = sender as! VTAnnotation
+        controller.pin = pin
     }
 }
 
@@ -187,7 +217,13 @@ extension MapViewController: MKMapViewDelegate {
     // annotationView
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         
-        // dequeue view
+        /*
+         AnnotView for annot.
+         Handle creation of pin annot view. Includes pin location title, and accessories on left/right
+         to invoke Pin deletion or navigation to AlbumVC for viewing flicks
+        */
+        
+        // dequeue pin annot view
         let reuseId = "pin"
         var pinView = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId) as? MKPinAnnotationView
         
@@ -199,9 +235,8 @@ extension MapViewController: MKMapViewDelegate {
             pinView!.canShowCallout = true
             pinView!.pinTintColor = .green
             pinView?.animatesDrop = true
-            pinView?.isDraggable = true
             
-            // add right callout..used to prompt user to Flicks CVC
+            // add right callout..used to prompt user to navigate to AlbumVC
             let rightCalloutAccessoryView = UIButton(type: .custom)
             rightCalloutAccessoryView.frame = CGRect(x: 0.0, y: 0.0, width: 33.0, height: 33.0)
             let rightImage = UIImage(named: "RightCalloutAccessoryImage")
@@ -215,9 +250,8 @@ extension MapViewController: MKMapViewDelegate {
             leftCalloutAccessoryView.setImage(leftImage, for: .normal)
             pinView?.leftCalloutAccessoryView = leftCalloutAccessoryView
         }
-        else {
-            pinView!.annotation = annotation
-        }
+
+        // assign annot to view
         pinView!.annotation = annotation
 
         return pinView
@@ -226,13 +260,19 @@ extension MapViewController: MKMapViewDelegate {
     // accessory tap
     func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
         
+        /*
+         callout accessory tapped
+         Handle Pin deletion if left accessory tapped.
+         Navigate into AlbumVC if right accessory tapped.
+         */
+        
         // test for annotation and Pin
         guard let annotation = view.annotation as? VTAnnotation,
             let pin = annotation.pin else {
                 return
         }
         
-        // left accessory. Delete Pin and Flick album
+        // left accessory. Delete Pin
         if control == view.leftCalloutAccessoryView {
             
             // create proceed/cancel alert to handle deleting location
@@ -277,10 +317,15 @@ extension MapViewController: MKMapViewDelegate {
     }
 }
 
+// location manager delegate methods
 extension MapViewController: CLLocationManagerDelegate {
     
     // handle user location update
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        
+        /*
+         response to user pressing search bbi to locate their position on map.
+        */
         
         // test for valid location
         guard let location = locations.last else {
@@ -305,6 +350,11 @@ extension MapViewController: CLLocationManagerDelegate {
     // handle CL auth
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
         
+        /*
+         location services authorization. If auth good, place search bbi on right navbar that allows
+         user to zoom in on their current location.
+        */
+        
         // test status
         switch status {
         case .authorizedWhenInUse:
@@ -325,6 +375,16 @@ extension MapViewController {
     // assign a Pin to annotation
     func assignPinToAnnotation(_ annotation: VTAnnotation) {
         
+        /*
+         Handle creation of a Pin MO to attached to an annotation.
+         Perform reverse geocode on annot coordinates, looking for valid placemark data. The location
+         info (name/title of location, state, name of city, etc) retrieved from the placemark. This
+         is used to set the title in the newly created Pin MO.
+         
+         Lastly, an album is then downloaded for the Pin
+        */
+        
+        // pull coordinate from annotation
         let coordinate = annotation.coordinate
         
         // reverse geocode coord
@@ -336,7 +396,7 @@ extension MapViewController {
             // test for geocode errors...look at most pertinent errors
             if let error = error as? CLError.Code {
                 
-                // error...present in alert with message
+                // error...present in alert with message and  remove annot pin from map
                 switch error {
                 case .locationUnknown:
                     self.presentAlertForError(VTError.locationError("Unknown location"))
@@ -347,19 +407,24 @@ extension MapViewController {
                 default:
                     self.presentAlertForError(VTError.locationError("Unknown geocoding error"))
                 }
+                
+                self.mapView.removeAnnotation(annotation)
+                
                 return
             }
             
             // test for valid placemark found in reverse geocoding
             guard let placemark = placemarks?.first else {
+                // present error and remove annotation from map
+                self.mapView.removeAnnotation(annotation)
                 self.presentAlertForError(VTError.locationError("Geocoding error. Possible network issue or offline"))
                 return
             }
             
-            // valid placemark info.. continue and create an annot for mapView
+            // valid placemark info.. continue and create Pin
             
             // sift placemark info for pertinent annot title..default title is "Location"
-            var locationTitle = "Location"
+            var locationTitle = self.DEFAULT_LOCATION_TITLE
             if let locality = placemark.locality {
                 locationTitle = locality
             }
@@ -378,27 +443,26 @@ extension MapViewController {
             newCoord.latitude = Double(coordinate.latitude)
             newCoord.longitude = Double(coordinate.longitude)
             
-            // create Pin MO
+            // create Pin MO, config Pin and annot
             let pin = Pin(context: self.stack.context)
             pin.coordinate = newCoord
             pin.title = locationTitle
+            annotation.title = locationTitle
+            annotation.pin = pin
             
             // save Pin
             do {
                 try self.stack.context.save()
                 
-                // successful save. Assign title and pin to annotation
-                annotation.title = locationTitle
-                annotation.pin = pin
-                
-                // download new album
+                // successful save. Download album
                 self.downloadAlbumForPin(pin, stack: self.stack)
-                
             } catch {
                 // bad Pin save. Remove annot and present error
                 DispatchQueue.main.async {
+                    annotation.pin = nil
                     self.mapView.removeAnnotation(annotation)
                     self.presentAlertForError(VTError.coreData("Unable to create/save Pin"))
+                    return
                 }
             }
         }

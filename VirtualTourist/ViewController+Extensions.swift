@@ -90,6 +90,9 @@ extension UIViewController {
     // download album of flicks for a Pin
     func downloadAlbumForPin(_ pin: Pin, stack: CoreDataStack) {
         
+        // set to downloading state
+        pin.isDownloading = true
+        
         // begin download of new album using API call
         FlickrAPI().createFlickrAlbumForPin(pin, page: nil) {
             (data, error) in
@@ -114,10 +117,8 @@ extension UIViewController {
             privateContext.parent = stack.context
             privateContext.perform {
                 
-                // retrieve pin. Indicate downloading
+                // retrieve pin.
                 let pin = privateContext.object(with: pin.objectID) as! Pin
-                //let flicks = pin.flicks
-                pin.isDownloading = true
                 
                 // create flicks, assign urlString, add to pin
                 for urlString in data {

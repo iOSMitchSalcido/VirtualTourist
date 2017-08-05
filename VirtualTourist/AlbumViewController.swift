@@ -7,7 +7,8 @@
 //
 /*
  About AlbumViewController.swift:
- Handle presentation of an album of flicks (photos) that have been downloaded from Flickr. Flick's are attached to a Pin managed object.
+ Handle presentation of an album of flicks (photos) that have been downloaded from Flickr using a collectionView.
+ Flick's are attached to a Pin managed object.
  
 - collectionView for presenting downloaded flicks.
 - scrollView to preview a flick when collectionView cell is tapped.
@@ -22,8 +23,8 @@ import CoreData
 
 class AlbumViewController: UIViewController {
     
-    // ref to annotation who's flicks are being presented .. set in invoking VC
-    var annotation: VTAnnotation!
+    // ref to Pin who's flicks are being presented .. set in invoking VC
+    var pin: Pin!
     
     // ref to stack, context, and Pin ..set in invoking VC
     var stack: CoreDataStack!
@@ -74,7 +75,7 @@ class AlbumViewController: UIViewController {
         super.viewDidLoad()
         
         // view title
-        if let viewTitle = annotation.pin?.title {
+        if let viewTitle = pin.title {
             title = viewTitle
         }
         else {
@@ -109,7 +110,7 @@ class AlbumViewController: UIViewController {
         */
         let fetchRequest: NSFetchRequest<Flick> = Flick.fetchRequest()
         let sort = NSSortDescriptor(key: #keyPath(Flick.urlString), ascending: true)
-        let predicate = NSPredicate(format: "pin == %@", annotation.pin!)
+        let predicate = NSPredicate(format: "pin == %@", pin)
         fetchRequest.predicate = predicate
         fetchRequest.sortDescriptors = [sort]
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
@@ -131,11 +132,11 @@ class AlbumViewController: UIViewController {
              3) normal
              */
             
-            if (annotation.pin?.isDownloading)! && (fetchedResultsController.fetchedObjects?.isEmpty)! {
+            if pin.isDownloading && (fetchedResultsController.fetchedObjects?.isEmpty)! {
                 // pin isDownloading, no flicks yet retrieved
                 mode = .preDownloading
             }
-            else if (annotation.pin?.isDownloading)! && !(fetchedResultsController.fetchedObjects?.isEmpty)! {
+            else if pin.isDownloading && !(fetchedResultsController.fetchedObjects?.isEmpty)! {
                 // pin is downloading, flicks have been retrieved
                 mode = .downloading
             }
@@ -321,7 +322,7 @@ class AlbumViewController: UIViewController {
             configureBars()
             
             // download new album
-            downloadAlbumForPin(annotation.pin!, stack: stack)
+            downloadAlbumForPin(pin, stack: stack)
         }
         
         // present proceed cancel alert if flicks are present..about to delete all flicks
@@ -336,7 +337,7 @@ class AlbumViewController: UIViewController {
                                         privateContext.parent = self.stack.context
                                         privateContext.perform {
                                             
-                                            let pin = privateContext.object(with: (self.annotation.pin?.objectID)!) as! Pin
+                                            let pin = privateContext.object(with: self.pin.objectID) as! Pin
                                             let flicks = pin.flicks
 
                                             // delete all flicks
@@ -390,7 +391,7 @@ class AlbumViewController: UIViewController {
             let image = UIImage(data: imageData) {
             
             var message = "Hello"
-            if let title = annotation.pin?.title {
+            if let title = pin.title {
                 message = message + " from " + title + " !"
             }
             let controller = UIActivityViewController(activityItems: [message, image], applicationActivities: nil)
