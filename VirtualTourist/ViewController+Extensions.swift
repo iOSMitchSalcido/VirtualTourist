@@ -250,6 +250,7 @@ extension UIViewController {
                 
                 // done downloading
                 pin.isDownloading = false
+                
                 // save....capture setting download to false
                 do {
                     try privateContext.save()
@@ -296,57 +297,60 @@ extension UIViewController {
             request.sortDescriptors = [sort]
             
             // perform fetch
+            var flicks: [Flick]!
             do {
-                let flicks = try privateContext.fetch(request)
-                
-                // iterate, retrieve image data
-                for flick in flicks {
-                    
-                    if flick.image == nil,
-                        let urlString = flick.urlString,
-                        let url = URL(string: urlString),
-                        let imageData = NSData(contentsOf: url) {
-                        
-                        flick.image = imageData
-                        
-                        // save
-                        do {
-                            try privateContext.save()
-                            
-                            stack.context.performAndWait {
-                                do {
-                                    try stack.context.save()
-                                } catch let error {
-                                    print("error: \(error.localizedDescription)")
-                                    return
-                                }
-                            }
-                        } catch let error {
-                            print("error: \(error.localizedDescription)")
-                            return
-                        }
-                    }
-                }
-                // done downloading
-                pin.isDownloading = false
-                
-                // save
-                do {
-                    try privateContext.save()
-                    
-                    stack.context.performAndWait {
-                        do {
-                            try stack.context.save()
-                        } catch let error {
-                            print("error: \(error.localizedDescription)")
-                            return
-                        }
-                    }
-                } catch let error {
-                    print("error: \(error.localizedDescription)")
-                    return
-                }
+                flicks = try privateContext.fetch(request)
             } catch {
+                print("error: \(error.localizedDescription)")
+                return
+            }
+            
+            // iterate, retrieve image data
+            for flick in flicks {
+                
+                if flick.image == nil,
+                    let urlString = flick.urlString,
+                    let url = URL(string: urlString),
+                    let imageData = NSData(contentsOf: url) {
+                    
+                    // assign image data to Flick
+                    flick.image = imageData
+                    
+                    // save...trigger FRC to update collectionView with latest flick in cell
+                    do {
+                        try privateContext.save()
+                        
+                        stack.context.performAndWait {
+                            do {
+                                try stack.context.save()
+                            } catch let error {
+                                print("error: \(error.localizedDescription)")
+                                return
+                            }
+                        }
+                    } catch let error {
+                        print("error: \(error.localizedDescription)")
+                        return
+                    }
+                }
+            }
+            
+            // done downloading
+            pin.isDownloading = false
+            
+            // save....capture setting download to false
+            do {
+                try privateContext.save()
+                
+                stack.context.performAndWait {
+                    do {
+                        try stack.context.save()
+                    } catch let error {
+                        print("error: \(error.localizedDescription)")
+                        return
+                    }
+                }
+            } catch let error {
                 print("error: \(error.localizedDescription)")
                 return
             }
