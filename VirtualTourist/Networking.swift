@@ -7,6 +7,11 @@
 //
 /*
  About Networking.swift:
+ 
+ Code for networking-
+ - create/run dataTask
+ - Networking constants
+ - enum for Error handling
  */
 
 import Foundation
@@ -24,6 +29,10 @@ struct Networking {
     
     // run a data task using parameters and completion
     func dataTaskForParameters(_ params: [String: AnyObject], completion: @escaping ([String:AnyObject]?, VTError?) -> Void) {
+        
+        /*
+         Handle creation/running of dataTask
+        */
         
         // test for good url
         guard let url = urlForParameters(params) else {
@@ -77,6 +86,10 @@ struct Networking {
     // create URL from parameters
     func urlForParameters(_ params: [String: AnyObject]) -> URL? {
 
+        /*
+         parse params and create/return url
+        */
+        
         // create components and add subcomponents
         var components = URLComponents()
         components.host = params[Networking.Keys.host] as? String
