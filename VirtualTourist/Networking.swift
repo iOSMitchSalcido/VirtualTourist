@@ -74,44 +74,6 @@ struct Networking {
         task.resume()
     }
     
-
-    // perform a data task, operates on a Data object (such as image data returned from Flickr)
-    func dataTaskForURL(_ url: URL, completion: @escaping (Data?, VTError?) -> Void) {
-        
-        // create request
-        let request = URLRequest(url: url)
-        
-        // create request
-        let task = URLSession.shared.dataTask(with: request) {
-            (data, response, error) in
-            
-            // check error
-            guard error == nil else {
-                completion(nil, VTError.networkError("Error during data task"))
-                return
-            }
-            
-            // check status code in response..test for non 2xx
-            guard let status = (response as? HTTPURLResponse)?.statusCode,
-                status >= 200, status <= 299 else {
-                    completion(nil, VTError.networkError("Bad status code returned: non 2xx"))
-                    return
-            }
-            
-            // check data
-            guard let data = data else {
-                completion(nil, VTError.networkError("Bad data returned from data task"))
-                return
-            }
-
-            // good data. Fire completion using good data
-            completion(data, nil)
-        }
-        
-        // fire task
-        task.resume()
-    }
-
     // create URL from parameters
     func urlForParameters(_ params: [String: AnyObject]) -> URL? {
 
