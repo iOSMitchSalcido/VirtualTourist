@@ -7,6 +7,8 @@
 //
 /*
  About VTAnnotation.swift
+ 
+ Annotation subclass. Added Pin ref.
 */
 
 import Foundation
