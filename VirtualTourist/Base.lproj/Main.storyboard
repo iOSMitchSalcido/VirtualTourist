@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="12121" systemVersion="16F73" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="rLS-3t-wNe">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="12121" systemVersion="16G29" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="rLS-3t-wNe">
     <device id="retina4_0" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
@@ -142,17 +142,25 @@
                             <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="kwd-j7-laH">
                                 <rect key="frame" x="142" y="266" width="37" height="37"/>
                             </activityIndicatorView>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="DB7-0j-Bqm">
+                                <rect key="frame" x="0.0" y="64" width="320" height="504"/>
+                                <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            </imageView>
                         </subviews>
                         <color key="backgroundColor" red="0.90196079019999997" green="0.90196079019999997" blue="0.90196079019999997" alpha="1" colorSpace="calibratedRGB"/>
                         <gestureRecognizers/>
                         <constraints>
                             <constraint firstItem="dEm-XI-Z3t" firstAttribute="centerX" secondItem="SFi-0c-b8y" secondAttribute="centerX" id="Anr-ac-wim"/>
                             <constraint firstItem="AGN-pQ-DmZ" firstAttribute="top" secondItem="U64-XZ-710" secondAttribute="bottom" constant="-64" id="BNQ-Kp-Die"/>
+                            <constraint firstItem="DB7-0j-Bqm" firstAttribute="top" secondItem="U64-XZ-710" secondAttribute="bottom" id="FZ9-xH-eme"/>
+                            <constraint firstAttribute="trailing" secondItem="DB7-0j-Bqm" secondAttribute="trailing" id="GiO-MV-KOv"/>
                             <constraint firstItem="feD-ZP-GDP" firstAttribute="top" secondItem="AGN-pQ-DmZ" secondAttribute="bottom" id="HNS-ka-jdQ"/>
                             <constraint firstItem="kwd-j7-laH" firstAttribute="centerX" secondItem="SFi-0c-b8y" secondAttribute="centerX" id="OZr-JY-JPc"/>
                             <constraint firstAttribute="trailing" secondItem="AGN-pQ-DmZ" secondAttribute="trailing" id="Z2x-ad-13F"/>
+                            <constraint firstItem="DB7-0j-Bqm" firstAttribute="leading" secondItem="SFi-0c-b8y" secondAttribute="leading" id="aza-fC-5yE"/>
                             <constraint firstItem="kwd-j7-laH" firstAttribute="centerY" secondItem="SFi-0c-b8y" secondAttribute="centerY" id="bXw-Ow-92v"/>
                             <constraint firstItem="AGN-pQ-DmZ" firstAttribute="leading" secondItem="SFi-0c-b8y" secondAttribute="leading" id="ftm-vt-QfO"/>
+                            <constraint firstItem="feD-ZP-GDP" firstAttribute="top" secondItem="DB7-0j-Bqm" secondAttribute="bottom" id="icU-aT-O9g"/>
                             <constraint firstItem="dEm-XI-Z3t" firstAttribute="centerY" secondItem="SFi-0c-b8y" secondAttribute="centerY" id="vvv-KF-kXh"/>
                         </constraints>
                     </view>
@@ -162,6 +170,7 @@
                         <outlet property="collectionView" destination="AGN-pQ-DmZ" id="aaC-py-XHy"/>
                         <outlet property="flowLayout" destination="h6k-Jx-Ejz" id="Bpz-Sa-7p8"/>
                         <outlet property="imagePreviewScrollView" destination="dEm-XI-Z3t" id="Vae-dn-0zm"/>
+                        <outlet property="noFlicksImageView" destination="DB7-0j-Bqm" id="wJg-zj-74R"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="5iN-qW-Ix8" userLabel="First Responder" sceneMemberID="firstResponder"/>

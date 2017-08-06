@@ -10,6 +10,9 @@
  Handle presentation of an album of flicks (photos) that have been downloaded from Flickr using a collectionView.
  Flick's are attached to a Pin managed object.
  
+ VC has "viewing modes", defined by enum AlbumViewMode below. Modes depend on status of download (predownloading, downloading,
+ etc), which is used to steer the presentation of the UI
+ 
 - collectionView for presenting downloaded flicks.
 - scrollView to preview a flick when collectionView cell is tapped.
 - progressView on navBar to indicate download progress.
@@ -44,6 +47,7 @@ class AlbumViewController: UIViewController {
         case normal         // normal, collectionView is visible
         case editing        // collectionView is visible, but editable (select/delete)
         case imagePreview   // previewing an image selected in the collectionView
+        case noFlicksFound  // album has no flicks at Pin location
     }
     
     // track view mode. Initialize in preDownloading mode
@@ -59,6 +63,7 @@ class AlbumViewController: UIViewController {
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!      // ref to CV flowLayout
     @IBOutlet weak var imagePreviewScrollView: UIScrollView!        // scrollView for flick preview
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!  // activity indicator for pre-download status
+    @IBOutlet weak var noFlicksImageView: UIImageView!              // imageView to indicate no flicks found
     var progressView: UIProgressView!                               // indicate download status, placed on navbar
     
     // ref to trashBbi...needed to enable/disable bbi as flicks are selected/deselected
@@ -87,6 +92,9 @@ class AlbumViewController: UIViewController {
         
         // hide activity indicator
         activityIndicator.isHidden = true
+        
+        // hide noFlicksImageView
+        noFlicksImageView.isHidden = true
         
         // hide imagePreviewScrollView, disable touch
         // ..use alpha to hide, will be animating in/out
@@ -129,7 +137,8 @@ class AlbumViewController: UIViewController {
                 isDownloading, flick count = 0
              2) downloading:
                 isDownloading, flick count > 0
-             3) normal
+             3) No flicks found for Pin
+             4) normal
              */
             
             if pin.isDownloading && (fetchedResultsController.fetchedObjects?.isEmpty)! {
@@ -139,6 +148,10 @@ class AlbumViewController: UIViewController {
             else if pin.isDownloading && !(fetchedResultsController.fetchedObjects?.isEmpty)! {
                 // pin is downloading, flicks have been retrieved
                 mode = .downloading
+            }
+            else if pin.noFlicksAtLocation {
+                // no flicks found at pin location
+                mode = .noFlicksFound
             }
             else {
                 // complete or no flicks
@@ -361,8 +374,12 @@ class AlbumViewController: UIViewController {
                                                 print("error: \(error.localizedDescription)")
                                                 return
                                             }
+                                            
+                                            // reload on main
+                                            DispatchQueue.main.async {
+                                                reloadAlbum()
+                                            }
                                         }
-                                        reloadAlbum()
             }
         }
         else {
@@ -570,6 +587,13 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
          to indicate status of downloading when complete
         */
 
+        // test for no flicks found
+        guard pin.noFlicksAtLocation == false else {
+            mode = .noFlicksFound
+            configureBars()
+            return
+        }
+        
         switch mode {
         case .preDownloading:
             /*
@@ -578,10 +602,19 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
              from preDownloading and place into .downloading mode
             */
             
-            if let progress = downloadProgress(),
-                progress > 0.0 {
+            if let progress = downloadProgress() {
                 
-                mode = .downloading
+                /*
+                 test if download complete...first flick may be the only flick
+                 found, want to return to normal
+                */
+                if progress >= DOWNLOAD_COMPLETE {
+                    mode = .normal
+                }
+                else {
+                    mode = .downloading
+                }
+                
                 configureBars()
             }
         case .downloading:
@@ -815,6 +848,17 @@ extension AlbumViewController {
             
             // hide back button..
             navigationItem.setLeftBarButton(placeholdeBbi, animated: true)
+        case .noFlicksFound:
+            /*
+             No flicks were found for Pin
+            */
+            
+            // no bbi's. Show NoFlicksFound image
+            navigationItem.setLeftBarButton(nil, animated: true)
+            navigationItem.setRightBarButton(nil, animated: true)
+            setToolbarItems(nil, animated: true)
+            noFlicksImageView.image = UIImage(named: "NoFlicksFound")
+            noFlicksImageView.isHidden = false
         }
     }
 }

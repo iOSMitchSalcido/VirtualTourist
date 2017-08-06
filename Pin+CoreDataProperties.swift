@@ -2,7 +2,7 @@
 //  Pin+CoreDataProperties.swift
 //  VirtualTourist
 //
-//  Created by Online Training on 7/15/17.
+//  Created by Online Training on 8/5/17.
 //  Copyright © 2017 Mitch Salcido. All rights reserved.
 //
 
@@ -16,8 +16,9 @@ extension Pin {
         return NSFetchRequest<Pin>(entityName: "Pin")
     }
 
-    @NSManaged public var title: String?
     @NSManaged public var isDownloading: Bool
+    @NSManaged public var title: String?
+    @NSManaged public var noFlicksAtLocation: Bool
     @NSManaged public var coordinate: Coordinate?
     @NSManaged public var flicks: NSOrderedSet?
 

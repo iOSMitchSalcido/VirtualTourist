@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="12141" systemVersion="16F73" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="12141" systemVersion="16G29" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Coordinate" representedClassName="Coordinate" syncable="YES">
         <attribute name="latitude" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="longitude" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES" syncable="YES"/>
@@ -13,6 +13,7 @@
     </entity>
     <entity name="Pin" representedClassName="Pin" syncable="YES">
         <attribute name="isDownloading" optional="YES" attributeType="Boolean" usesScalarValueType="YES" syncable="YES"/>
+        <attribute name="noFlicksAtLocation" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="coordinate" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="Coordinate" inverseName="pin" inverseEntity="Coordinate" syncable="YES"/>
         <relationship name="flicks" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="Flick" inverseName="pin" inverseEntity="Flick" syncable="YES"/>
@@ -20,6 +21,6 @@
     <elements>
         <element name="Coordinate" positionX="-36" positionY="9" width="128" height="90"/>
         <element name="Flick" positionX="-54" positionY="-9" width="128" height="105"/>
-        <element name="Pin" positionX="-63" positionY="-18" width="128" height="105"/>
+        <element name="Pin" positionX="-63" positionY="-18" width="128" height="120"/>
     </elements>
 </model>

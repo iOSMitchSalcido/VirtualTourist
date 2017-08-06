@@ -90,8 +90,9 @@ extension UIViewController {
     // download album of flicks for a Pin
     func downloadAlbumForPin(_ pin: Pin, stack: CoreDataStack) {
         
-        // set to downloading state
+        // set to downloading state, noFlicks
         pin.isDownloading = true
+        pin.noFlicksAtLocation = false
         
         // begin download of new album using API call
         FlickrAPI().createFlickrAlbumForPin(pin, page: nil) {
@@ -113,12 +114,39 @@ extension UIViewController {
                 return
             }
             
+            // core data on private queue
             let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
             privateContext.parent = stack.context
             privateContext.perform {
                 
                 // retrieve pin.
                 let pin = privateContext.object(with: pin.objectID) as! Pin
+                
+                // test for no data returned
+                if data.isEmpty {
+                    pin.noFlicksAtLocation = true
+                    pin.isDownloading = false
+                    
+                    // save...will cause frc to repopulate cv with noFlicks image
+                    do {
+                        try privateContext.save()
+                        
+                        stack.context.performAndWait {
+                            do {
+                                try stack.context.save()
+                            } catch let error {
+                                print("error: \(error.localizedDescription)")
+                                return
+                            }
+                        }
+                    } catch let error {
+                        print("error: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    // done..
+                    return
+                }
                 
                 // create flicks, assign urlString, add to pin
                 for urlString in data {
