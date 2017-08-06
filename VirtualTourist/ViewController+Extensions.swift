@@ -7,6 +7,11 @@
 //
 /*
  About ViewController+Extensions.swift:
+ 
+ functions for use in UIViewController subclasses.
+ 
+ - Alert/Action Controllers
+ - Flick/Album dowloading
  */
 
 import UIKit
@@ -90,6 +95,11 @@ extension UIViewController {
     // download album of flicks for a Pin
     func downloadAlbumForPin(_ pin: Pin, stack: CoreDataStack) {
         
+        /*
+         Handle downloading of Flickr photos into a Pin.
+         Each flick received is assigned to a Flick MO which is attached to Pin
+         */
+        
         // set to downloading state, noFlicks
         pin.isDownloading = true
         pin.noFlicksAtLocation = false
@@ -114,12 +124,12 @@ extension UIViewController {
                 return
             }
             
-            // core data on private queue
+            // receive/parse data, perform on private queue/context
             let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
             privateContext.parent = stack.context
             privateContext.perform {
                 
-                // retrieve pin.
+                // pull pin ref into private context
                 let pin = privateContext.object(with: pin.objectID) as! Pin
                 
                 // test for no data returned
@@ -148,13 +158,25 @@ extension UIViewController {
                     return
                 }
                 
+                /*
+                 FLickr data and flick creation if performed in two passes. The first pass is to simply retrieve
+                 the urlString array returned from API call (data) and then create Flick MO's using urlString.
+                 Upon saving, this will trigger an FRC attached to Pin to reload a collectionView with empty
+                 placehold default images.
+                 
+                 Second pass is to perform actual download of images from Flickr and assign to Flick.
+                 
+                 This is doen for aesthetic purposes, to give the user immediate feedback on the flicks that
+                 are to populate a collectionView.
+                 */
+                
                 // create flicks, assign urlString, add to pin
                 for urlString in data {
                     let flick = Flick(context: privateContext)
                     flick.urlString = urlString
                     pin.addToFlicks(flick)
                 }
-
+                
                 // save...will cause frc to repopulate cv with default image
                 do {
                     try privateContext.save()
@@ -185,68 +207,69 @@ extension UIViewController {
                 let predicate = NSPredicate(format: "pin == %@", pin)
                 request.predicate = predicate
                 request.sortDescriptors = [sort]
+                
+                // perform fetch
+                var flicks: [Flick]!
                 do {
-                    
-                    // perform fetch
-                    let flicks = try privateContext.fetch(request)
-                    
-                    // iterate, pull image data and assign to Flick
-                    // ..save as each flick is retrieved
-                    for flick in flicks {
-                        
-                        // verify good url, data
-                        if let urlString = flick.urlString,
-                            let url = URL(string: urlString),
-                            let imageData = NSData(contentsOf: url) {
-                            
-                            // assign data to Flick
-                            flick.image = imageData
-                            
-                            // save
-                            do {
-                                try privateContext.save()
-                                
-                                stack.context.performAndWait {
-                                    do {
-                                        try stack.context.save()
-                                    } catch let error {
-                                        print("error: \(error.localizedDescription)")
-                                        return
-                                    }
-                                }
-                            } catch let error {
-                                print("error: \(error.localizedDescription)")
-                                return
-                            }
-                        }
-                    }
-                    
-                    // done downloading
-                    pin.isDownloading = false
-                    // save....capture setting download to false
-                    do {
-                        try privateContext.save()
-                        
-                        stack.context.performAndWait {
-                            do {
-                                try stack.context.save()
-                            } catch let error {
-                                print("error: \(error.localizedDescription)")
-                                return
-                            }
-                        }
-                    } catch let error {
-                        print("error: \(error.localizedDescription)")
-                        return
-                    }
+                    flicks = try privateContext.fetch(request)
                 } catch {
+                    print("error: \(error.localizedDescription)")
+                    return
+                }
+                
+                // iterate, pull image data and assign to Flick
+                // ..save as each flick is retrieved
+                for flick in flicks {
+                    
+                    // verify good url, data
+                    if let urlString = flick.urlString,
+                        let url = URL(string: urlString),
+                        let imageData = NSData(contentsOf: url) {
+                        
+                        // assign data to Flick
+                        flick.image = imageData
+                        
+                        // save...trigger FRC to update collectionView with latest flick in cell
+                        do {
+                            try privateContext.save()
+                            
+                            stack.context.performAndWait {
+                                do {
+                                    try stack.context.save()
+                                } catch let error {
+                                    print("error: \(error.localizedDescription)")
+                                    return
+                                }
+                            }
+                        } catch let error {
+                            print("error: \(error.localizedDescription)")
+                            return
+                        }
+                    }
+                }
+                
+                // done downloading
+                pin.isDownloading = false
+                // save....capture setting download to false
+                do {
+                    try privateContext.save()
+                    
+                    stack.context.performAndWait {
+                        do {
+                            try stack.context.save()
+                        } catch let error {
+                            print("error: \(error.localizedDescription)")
+                            return
+                        }
+                    }
+                } catch let error {
                     print("error: \(error.localizedDescription)")
                     return
                 }
             }
         }
     }
-    
+
     // resume download
     func resumeAlbumDownloadForPin(_ pin: Pin, stack: CoreDataStack) {
         
