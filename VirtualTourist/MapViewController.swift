@@ -381,7 +381,7 @@ extension MapViewController {
          info (name/title of location, state, name of city, etc) retrieved from the placemark. This
          is used to set the title in the newly created Pin MO.
          
-         Lastly, an album is then downloaded for the Pin
+         ...an album is then downloaded for the Pin
         */
         
         // pull coordinate from annotation
@@ -413,29 +413,22 @@ extension MapViewController {
                 return
             }
             
-            // test for valid placemark found in reverse geocoding
-            guard let placemark = placemarks?.first else {
-                // present error and remove annotation from map
-                self.mapView.removeAnnotation(annotation)
-                self.presentAlertForError(VTError.locationError("Geocoding error. Possible network issue or offline"))
-                return
-            }
-            
-            // valid placemark info.. continue and create Pin
-            
-            // sift placemark info for pertinent annot title..default title is "Location"
+            // set default location title, then test for valid placemark data for use as title
             var locationTitle = self.DEFAULT_LOCATION_TITLE
-            if let locality = placemark.locality {
-                locationTitle = locality
-            }
-            else if let administrativeArea = placemark.administrativeArea {
-                locationTitle = administrativeArea
-            }
-            else if let country = placemark.country {
-                locationTitle = country
-            }
-            else if let ocean = placemark.ocean {
-                locationTitle = ocean
+            if let placemark = placemarks?.first {
+             
+                if let locality = placemark.locality {
+                    locationTitle = locality
+                }
+                else if let administrativeArea = placemark.administrativeArea {
+                    locationTitle = administrativeArea
+                }
+                else if let country = placemark.country {
+                    locationTitle = country
+                }
+                else if let ocean = placemark.ocean {
+                    locationTitle = ocean
+                }
             }
             
             // create coordinate MO
