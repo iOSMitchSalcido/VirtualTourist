@@ -12,6 +12,8 @@ import CoreData
 @objc(Pin)
 public class Pin: NSManagedObject {
     
+    // property to determine if download was completed
+    // ...all flicks have non-nil image data
     var downloadComplete: Bool {
         get {
             for flick in self.flicks! {

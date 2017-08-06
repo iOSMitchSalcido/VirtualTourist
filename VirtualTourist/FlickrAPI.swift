@@ -7,6 +7,8 @@
 //
 /*
  About FlickrAPI.swift:
+ 
+ Interface for downloading flicks from Flickr
  */
 
 import Foundation
@@ -15,6 +17,7 @@ import MapKit
 
 struct FlickrAPI {
     
+    // constants
     let SEARCH_RADIUS: Double = 10.0    // default search radius
     let MAX_IMAGES: Int = 50            // maximum number of images to download
     let MAX_FLICKS: Int = 4000          // maximum number of flicks that Flickr will return
@@ -23,6 +26,19 @@ struct FlickrAPI {
     func createFlickrAlbumForPin(_ pin: Pin,
                                   page: Int?,
                                   completion: @escaping ([String]?, VTError?) -> Void) {
+        /*
+         Handle downloading an "album" of flicks from flickr. Pin is passed as an argument to pull location info
+         for flickr search.
+         
+         Arguments passed into function:
+         - pin, a Pin MO with valid coordinate
+         - page, !! page must be nil !! ..this argument is used recursively on a second call to this function below
+         
+         
+         Completion:
+         - [String]?, Array of urls in string format. Array contains url's of flicks found during search
+         - VTError?, error enum defined in file Networking
+        */
         
         // verify good coordinates
         guard let longitude = pin.coordinate?.longitude,
@@ -35,6 +51,7 @@ struct FlickrAPI {
         let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
         let params = createPhotoSearchParamsForCoordinate(coordinate, page: page)
         
+        // network task
         Networking().dataTaskForParameters(params) {
             (data, error) in
             
@@ -50,15 +67,47 @@ struct FlickrAPI {
                 return
             }
             
+            /*
+             Flickr search is performed in two passes. The first pass, with page = nil, the returned
+             flickr data is parsed for number of pages. A random page is determined and then this function
+             is invoked once again, only this time with page = randomPage
+             */
+            
             // retrieve Flickr data
-            guard let photosDict = data[FlickrAPI.Keys.photosDictionary] as? [String: AnyObject] else {
+            guard let photosDict = data[FlickrAPI.Keys.photosDictionary] as? [String: AnyObject],
+            let items = params[Networking.Keys.items] as? [String: AnyObject] else {
                 completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
                 return
             }
             
-            if let items = params[Networking.Keys.items] as? [String: AnyObject],
-                let _ = items[FlickrAPI.Keys.page] {
+            // test if page was a search param
+            if items[FlickrAPI.Keys.page] == nil {
                 
+                /*
+                 page not a search param. Retrieve number of available pages, get a random page
+                 and perform a new search
+                */
+                
+                // get page info
+                guard let pages = photosDict[FlickrAPI.Keys.pages] as? Int,
+                    let perPage = photosDict[FlickrAPI.Keys.perPage] as? Int else {
+                        completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
+                        return
+                }
+                
+                // Flickr has photo limit. Get max allowable page search, generate a random page
+                let pageLimit = min(pages, self.MAX_FLICKS / perPage)
+                let randomPage = Int(arc4random_uniform(UInt32(pageLimit))) + 1
+                
+                // run new search using random page
+                self.createFlickrAlbumForPin(pin, page: randomPage, completion: completion)
+            }
+            else {
+                
+                /*
+                 page was a search param.
+                 retrieve url strings from search...fire completion
+                 */
                 // page was a search param..proceed to retrieve flick URL's as strings
                 guard let photosArray = photosDict[FlickrAPI.Keys.photosArray] as? [[String: AnyObject]] else {
                     completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
@@ -76,21 +125,6 @@ struct FlickrAPI {
                 
                 // fire completion with array
                 completion(urlStrings, nil)
-            }
-            else {
-                
-                guard let pages = photosDict[FlickrAPI.Keys.pages] as? Int,
-                    let perPage = photosDict[FlickrAPI.Keys.perPage] as? Int else {
-                        completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
-                        return
-                }
-                
-                // Flickr has 4000 photo limit. Get max allowable page search, generate a random page
-                let pageLimit = min(pages, self.MAX_FLICKS / perPage)
-                let randomPage = Int(arc4random_uniform(UInt32(pageLimit))) + 1
-                
-                // run new search using random page
-                self.createFlickrAlbumForPin(pin, page: randomPage, completion: completion)
             }
         }
     }
