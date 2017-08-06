@@ -84,7 +84,7 @@ struct FlickrAPI {
             if items[FlickrAPI.Keys.page] == nil {
                 
                 /*
-                 page not a search param. Retrieve number of available pages, get a random page
+                 page NOT a search param. Retrieve number of available pages, get a random page
                  and perform a new search
                 */
                 
@@ -108,6 +108,7 @@ struct FlickrAPI {
                  page was a search param.
                  retrieve url strings from search...fire completion
                  */
+                
                 // page was a search param..proceed to retrieve flick URL's as strings
                 guard let photosArray = photosDict[FlickrAPI.Keys.photosArray] as? [[String: AnyObject]] else {
                     completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
@@ -131,6 +132,10 @@ struct FlickrAPI {
     
     // helper function to create params used by data task for flick search
     func createPhotoSearchParamsForCoordinate(_ coordinate: CLLocationCoordinate2D, page: Int?) -> [String: AnyObject] {
+        
+        /*
+         Build params for network task using location, page, and constants defined below...
+        */
         
         // build base params
         var items = ["method": FlickrAPI.Methods.photosSearch,
