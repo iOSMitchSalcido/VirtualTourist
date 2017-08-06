@@ -18,6 +18,7 @@
 		8615B20B1EF5D4C600771F31 /* VirtualTouristModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 8615B2091EF5D4C600771F31 /* VirtualTouristModel.xcdatamodeld */; };
 		8615B2191EF5FE1000771F31 /* VTAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8615B2181EF5FE1000771F31 /* VTAnnotation.swift */; };
 		865BAE6E1F1AC1F9001D3C61 /* Pin+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 865BAE6C1F1AC1F9001D3C61 /* Pin+CoreDataClass.swift */; };
+		866F00ED1F37B42C00E3870F /* AppHelpViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 866F00EC1F37B42C00E3870F /* AppHelpViewController.swift */; };
 		86C10DC11F368D7C001A2E00 /* Pin+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86C10DC01F368D7C001A2E00 /* Pin+CoreDataProperties.swift */; };
 		86D293E31F1865B6003DF8B1 /* Flick+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D293DD1F1865B6003DF8B1 /* Flick+CoreDataClass.swift */; };
 		86D293E41F1865B6003DF8B1 /* Flick+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D293DE1F1865B6003DF8B1 /* Flick+CoreDataProperties.swift */; };
@@ -65,6 +66,7 @@
 		8615B20A1EF5D4C600771F31 /* VirtualTouristModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VirtualTouristModel.xcdatamodel; sourceTree = "<group>"; };
 		8615B2181EF5FE1000771F31 /* VTAnnotation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VTAnnotation.swift; sourceTree = "<group>"; };
 		865BAE6C1F1AC1F9001D3C61 /* Pin+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Pin+CoreDataClass.swift"; path = "../Pin+CoreDataClass.swift"; sourceTree = "<group>"; };
+		866F00EC1F37B42C00E3870F /* AppHelpViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppHelpViewController.swift; sourceTree = "<group>"; };
 		86C10DC01F368D7C001A2E00 /* Pin+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Pin+CoreDataProperties.swift"; path = "../Pin+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		86D293DD1F1865B6003DF8B1 /* Flick+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Flick+CoreDataClass.swift"; path = "../Flick+CoreDataClass.swift"; sourceTree = "<group>"; };
 		86D293DE1F1865B6003DF8B1 /* Flick+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Flick+CoreDataProperties.swift"; path = "../Flick+CoreDataProperties.swift"; sourceTree = "<group>"; };
@@ -130,6 +132,7 @@
 				860659271EF1680100990C05 /* AppDelegate.swift */,
 				860659291EF1680100990C05 /* MapViewController.swift */,
 				86E607B81EF4142100F79798 /* AlbumViewController.swift */,
+				866F00EC1F37B42C00E3870F /* AppHelpViewController.swift */,
 				86DBB9131EF2158900495478 /* ViewController+Extensions.swift */,
 				8615B2181EF5FE1000771F31 /* VTAnnotation.swift */,
 				8615B2051EF5B63A00771F31 /* PhotoCell.swift */,
@@ -325,6 +328,7 @@
 				86DBB9141EF2158900495478 /* ViewController+Extensions.swift in Sources */,
 				86D293E81F1865F0003DF8B1 /* CoreDataStack.swift in Sources */,
 				865BAE6E1F1AC1F9001D3C61 /* Pin+CoreDataClass.swift in Sources */,
+				866F00ED1F37B42C00E3870F /* AppHelpViewController.swift in Sources */,
 				86D293E31F1865B6003DF8B1 /* Flick+CoreDataClass.swift in Sources */,
 				86D293E61F1865B6003DF8B1 /* Coordinate+CoreDataProperties.swift in Sources */,
 				86C10DC11F368D7C001A2E00 /* Pin+CoreDataProperties.swift in Sources */,

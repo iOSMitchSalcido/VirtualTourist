@@ -9,35 +9,79 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
+        <!--App Help View Controller-->
+        <scene sceneID="0KT-0Z-qB5">
+            <objects>
+                <viewController storyboardIdentifier="AppHelpViewControllerID" id="YuW-XN-qwc" customClass="AppHelpViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="f97-Id-3hY"/>
+                        <viewControllerLayoutGuide type="bottom" id="dym-uV-vJu"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="nRx-FX-OXG">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                    </view>
+                    <navigationItem key="navigationItem" id="FTf-1z-J4z">
+                        <nil key="title"/>
+                        <view key="titleView" contentMode="scaleToFill" id="T8X-CL-Den">
+                            <rect key="frame" x="96" y="5.5" width="128" height="33"/>
+                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <subviews>
+                                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="JXg-Ni-UUu">
+                                    <rect key="frame" x="0.0" y="0.0" width="128" height="33"/>
+                                    <color key="backgroundColor" cocoaTouchSystemColor="darkTextColor"/>
+                                </imageView>
+                            </subviews>
+                            <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                            <constraints>
+                                <constraint firstItem="JXg-Ni-UUu" firstAttribute="top" secondItem="T8X-CL-Den" secondAttribute="top" id="31H-Xz-BsD"/>
+                                <constraint firstAttribute="trailing" secondItem="JXg-Ni-UUu" secondAttribute="trailing" id="Vbf-h8-Tzl"/>
+                                <constraint firstAttribute="bottom" secondItem="JXg-Ni-UUu" secondAttribute="bottom" id="YLW-bU-fbL"/>
+                                <constraint firstItem="JXg-Ni-UUu" firstAttribute="leading" secondItem="T8X-CL-Den" secondAttribute="leading" id="ayj-bc-v1i"/>
+                            </constraints>
+                        </view>
+                        <barButtonItem key="rightBarButtonItem" systemItem="done" id="1ZK-aF-fml">
+                            <connections>
+                                <action selector="doneBbiPressed:" destination="YuW-XN-qwc" id="efS-Yy-3Wr"/>
+                            </connections>
+                        </barButtonItem>
+                    </navigationItem>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="rJd-4C-ff1" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="2482.5" y="-911.61971830985919"/>
+        </scene>
         <!--Map View Controller-->
         <scene sceneID="tne-QT-ifu">
             <objects>
                 <viewController id="BYZ-38-t0r" customClass="MapViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="y3c-jy-aDJ"/>
-                        <viewControllerLayoutGuide type="bottom" id="wfy-db-euE"/>
+                        <viewControllerLayoutGuide type="top" id="Ffg-Lh-3LQ"/>
+                        <viewControllerLayoutGuide type="bottom" id="Kbc-3t-xSQ"/>
                     </layoutGuides>
-                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+                    <view key="view" contentMode="scaleToFill" id="O8V-Wq-kh2">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <subviews>
-                            <mapView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" mapType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="Plf-wC-E2S">
+                            <mapView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" mapType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="mgc-CR-8qd">
                                 <rect key="frame" x="0.0" y="64" width="320" height="504"/>
-                                <gestureRecognizers/>
                                 <connections>
-                                    <outlet property="delegate" destination="BYZ-38-t0r" id="gkz-MC-VIp"/>
-                                    <outletCollection property="gestureRecognizers" destination="oZ1-UW-RO0" appends="YES" id="8OA-tR-aqe"/>
+                                    <outlet property="delegate" destination="BYZ-38-t0r" id="84C-gm-jpm"/>
                                 </connections>
                             </mapView>
                         </subviews>
-                        <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <gestureRecognizers/>
                         <constraints>
-                            <constraint firstItem="Plf-wC-E2S" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="6je-L7-pJd"/>
-                            <constraint firstAttribute="trailing" secondItem="Plf-wC-E2S" secondAttribute="trailing" id="B0J-Ov-n4D"/>
-                            <constraint firstItem="Plf-wC-E2S" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="JfR-aJ-O5Y"/>
-                            <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="Plf-wC-E2S" secondAttribute="bottom" id="W3c-Ag-dbP"/>
+                            <constraint firstItem="mgc-CR-8qd" firstAttribute="top" secondItem="Ffg-Lh-3LQ" secondAttribute="bottom" id="7tH-Pe-Tmc"/>
+                            <constraint firstItem="Kbc-3t-xSQ" firstAttribute="top" secondItem="mgc-CR-8qd" secondAttribute="bottom" id="EOp-Q5-qeW"/>
+                            <constraint firstItem="mgc-CR-8qd" firstAttribute="leading" secondItem="O8V-Wq-kh2" secondAttribute="leading" id="WCk-Mh-PGy"/>
+                            <constraint firstAttribute="trailing" secondItem="mgc-CR-8qd" secondAttribute="trailing" id="qBX-v6-O1z"/>
                         </constraints>
+                        <connections>
+                            <outletCollection property="gestureRecognizers" destination="k4c-Hd-eG6" appends="YES" id="tD5-ZM-FhS"/>
+                        </connections>
                     </view>
                     <navigationItem key="navigationItem" id="ics-wB-Kvs">
                         <nil key="title"/>
@@ -55,15 +99,15 @@
                         </view>
                     </navigationItem>
                     <connections>
-                        <outlet property="mapView" destination="Plf-wC-E2S" id="5uO-Y3-swp"/>
+                        <outlet property="mapView" destination="mgc-CR-8qd" id="R5m-dn-NGl"/>
                         <outlet property="titleImageView" destination="az1-eZ-rsX" id="ZTf-KP-5mw"/>
                         <segue destination="BKX-hb-Se1" kind="show" identifier="AlbumSegueID" id="WMT-j1-zY3"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
-                <pongPressGestureRecognizer allowableMovement="10" minimumPressDuration="0.5" id="oZ1-UW-RO0">
+                <pongPressGestureRecognizer allowableMovement="10" minimumPressDuration="0.5" id="k4c-Hd-eG6">
                     <connections>
-                        <action selector="longPressDetected:" destination="BYZ-38-t0r" id="LJU-8V-Rep"/>
+                        <action selector="longPressDetected:" destination="BYZ-38-t0r" id="iy3-In-XxE"/>
                     </connections>
                 </pongPressGestureRecognizer>
             </objects>
@@ -140,7 +184,7 @@
                                 </constraints>
                             </scrollView>
                             <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="kwd-j7-laH">
-                                <rect key="frame" x="142" y="266" width="37" height="37"/>
+                                <rect key="frame" x="141.5" y="265.5" width="37" height="37"/>
                             </activityIndicatorView>
                             <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="DB7-0j-Bqm">
                                 <rect key="frame" x="0.0" y="64" width="320" height="504"/>
@@ -194,6 +238,24 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="jrk-yq-Aa7" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="150" y="139"/>
+        </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="aHA-Ww-hae">
+            <objects>
+                <navigationController storyboardIdentifier="HelpNavViewControllerID" automaticallyAdjustsScrollViewInsets="NO" id="S7T-Su-J6l" sceneMemberID="viewController">
+                    <toolbarItems/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="b6p-8p-eG2">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="YuW-XN-qwc" kind="relationship" relationship="rootViewController" id="kDw-cc-wSg"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="rus-rb-CT8" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1485" y="-912.67605633802816"/>
         </scene>
     </scenes>
     <resources>
