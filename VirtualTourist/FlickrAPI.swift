@@ -19,7 +19,16 @@ struct FlickrCoordinate {
     let longitude: Double
 }
 
-struct FlickrAPI {
+class FlickrAPI {
+    
+    // ref to Networking
+    let networking: Networking
+    
+    // singleton
+    static let shared = FlickrAPI()
+    private init() {
+        self.networking = Networking()
+    }
     
     // constants
     let searchRadius: Double = 10.0                     // default search radius

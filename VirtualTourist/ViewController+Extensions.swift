@@ -112,7 +112,7 @@ extension UIViewController {
         
         // begin download of new album using API call
         let coordinate = FlickrCoordinate(latitude: latitude, longitude: longitude)
-        FlickrAPI().createFlickrAlbumForCoordinate(coordinate, page: nil) {
+        FlickrAPI.shared.createFlickrAlbumForCoordinate(coordinate, page: nil) {
             (data, error) in
             
             // test error, show alert if error
