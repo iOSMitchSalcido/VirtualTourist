@@ -73,11 +73,9 @@ class MapViewController: UIViewController {
         }
         
         // add appInfo bbi
-        /*
         let infoButton = UIButton(type: .infoLight)
         infoButton.addTarget(self, action: #selector(appInfoBbiPressed), for: .touchUpInside)
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: infoButton)
-        */
         
         // debug code ...looking for unowned flicks
         let flickFr: NSFetchRequest<Flick> = Flick.fetchRequest()

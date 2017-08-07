@@ -20,7 +20,27 @@
                     <view key="view" contentMode="scaleToFill" id="nRx-FX-OXG">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="305-97-J2A">
+                                <rect key="frame" x="0.0" y="64" width="320" height="504"/>
+                                <subviews>
+                                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppInfoTitle" translatesAutoresizingMaskIntoConstraints="NO" id="umi-YA-M5K">
+                                        <rect key="frame" x="0.0" y="0.0" width="320" height="249.5"/>
+                                    </imageView>
+                                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppInfoInstructions" translatesAutoresizingMaskIntoConstraints="NO" id="mE5-um-rSR">
+                                        <rect key="frame" x="0.0" y="254.5" width="320" height="249.5"/>
+                                    </imageView>
+                                </subviews>
+                                <variation key="heightClass=compact" axis="horizontal"/>
+                            </stackView>
+                        </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="305-97-J2A" firstAttribute="top" secondItem="f97-Id-3hY" secondAttribute="bottom" id="4sT-jb-H0u"/>
+                            <constraint firstAttribute="trailing" secondItem="305-97-J2A" secondAttribute="trailing" id="HCj-K0-twI"/>
+                            <constraint firstItem="dym-uV-vJu" firstAttribute="top" secondItem="305-97-J2A" secondAttribute="bottom" id="dAa-PB-AUE"/>
+                            <constraint firstItem="305-97-J2A" firstAttribute="leading" secondItem="nRx-FX-OXG" secondAttribute="leading" id="eX1-8P-57U"/>
+                        </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="FTf-1z-J4z">
                         <nil key="title"/>
@@ -28,22 +48,23 @@
                             <rect key="frame" x="96" y="5.5" width="128" height="33"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                             <subviews>
-                                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="JXg-Ni-UUu">
-                                    <rect key="frame" x="0.0" y="0.0" width="128" height="33"/>
-                                    <color key="backgroundColor" cocoaTouchSystemColor="darkTextColor"/>
+                                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppInfoTitleImage" translatesAutoresizingMaskIntoConstraints="NO" id="JXg-Ni-UUu">
+                                    <rect key="frame" x="0.0" y="5" width="128" height="23"/>
+                                    <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                 </imageView>
                             </subviews>
-                            <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                            <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                             <constraints>
-                                <constraint firstItem="JXg-Ni-UUu" firstAttribute="top" secondItem="T8X-CL-Den" secondAttribute="top" id="31H-Xz-BsD"/>
-                                <constraint firstAttribute="trailing" secondItem="JXg-Ni-UUu" secondAttribute="trailing" id="Vbf-h8-Tzl"/>
-                                <constraint firstAttribute="bottom" secondItem="JXg-Ni-UUu" secondAttribute="bottom" id="YLW-bU-fbL"/>
-                                <constraint firstItem="JXg-Ni-UUu" firstAttribute="leading" secondItem="T8X-CL-Den" secondAttribute="leading" id="ayj-bc-v1i"/>
+                                <constraint firstAttribute="trailing" secondItem="JXg-Ni-UUu" secondAttribute="trailing" id="Prz-qJ-r2D"/>
+                                <constraint firstItem="JXg-Ni-UUu" firstAttribute="leading" secondItem="T8X-CL-Den" secondAttribute="leading" id="UX1-q5-39H"/>
+                                <constraint firstItem="JXg-Ni-UUu" firstAttribute="top" secondItem="T8X-CL-Den" secondAttribute="top" constant="5" id="sdV-Cv-F6r"/>
+                                <constraint firstAttribute="bottom" secondItem="JXg-Ni-UUu" secondAttribute="bottom" constant="5" id="uXq-BA-ltK"/>
+                                <constraint firstItem="JXg-Ni-UUu" firstAttribute="centerY" secondItem="T8X-CL-Den" secondAttribute="centerY" id="yi1-AH-RXB"/>
                             </constraints>
                         </view>
                         <barButtonItem key="rightBarButtonItem" systemItem="done" id="1ZK-aF-fml">
                             <connections>
-                                <action selector="doneBbiPressed:" destination="YuW-XN-qwc" id="efS-Yy-3Wr"/>
+                                <action selector="doneBbiPressed:" destination="YuW-XN-qwc" id="qT9-Uz-BxL"/>
                             </connections>
                         </barButtonItem>
                     </navigationItem>
@@ -259,6 +280,9 @@
         </scene>
     </scenes>
     <resources>
+        <image name="AppInfoInstructions" width="252" height="252"/>
+        <image name="AppInfoTitle" width="252" height="252"/>
+        <image name="AppInfoTitleImage" width="128" height="33"/>
         <image name="DefaultCVCellImage" width="100" height="100"/>
         <image name="SelectionCheckMark40pt" width="40" height="40"/>
     </resources>
