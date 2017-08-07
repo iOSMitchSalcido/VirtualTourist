@@ -25,6 +25,12 @@ enum VTError: Swift.Error {
     case coreData(String)       // coreData related issue
 }
 
+enum NetworkingError: LocalizedError {
+    case url(String)
+    case response(String)
+    case data(String)
+}
+
 struct Networking {
     
     // run a data task using parameters and completion

@@ -33,12 +33,12 @@ class AlbumViewController: UIViewController {
     var stack: CoreDataStack!
     
     // constants for collectionView cell size and spacing
-    let CELL_SPACING: CGFloat = 2.0     // spacing between cells
-    let CELLS_PER_ROW: CGFloat = 4.0    // number of cells per row, same for both portrait and landscape orientation
+    let collectionViewCellSpacing: CGFloat = 2.0        // spacing between cells
+    let collectionViewCellsPerRow: CGFloat = 4.0        // number of cells per row, same for both portrait and landscape orientation
     
     // constant for download complete... < 1.0 still downloading
     // ..pertinent when frc is still in the process of downloading flicks
-    let DOWNLOAD_COMPLETE: Float = 1.0
+    let albumDownloadComplete: Float = 1.0
     
     // view mode enum ..used to track/test/steer how view/UI is presented
     enum AlbumViewingMode {
@@ -177,12 +177,12 @@ class AlbumViewController: UIViewController {
         flowLayout.scrollDirection = .vertical
         
         // spacing between rows/columns
-        flowLayout.minimumLineSpacing = CELL_SPACING
-        flowLayout.minimumInteritemSpacing = CELL_SPACING
+        flowLayout.minimumLineSpacing = collectionViewCellSpacing
+        flowLayout.minimumInteritemSpacing = collectionViewCellSpacing
         
         // create/set itemSize for cell
-        let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (CELLS_PER_ROW - 1.0) * CELL_SPACING
-        flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / CELLS_PER_ROW,                                     height: widthAvailableForCellsInRow / CELLS_PER_ROW)
+        let widthAvailableForCellsInRow = (collectionView?.frame.size.width)! - (collectionViewCellsPerRow - 1.0) * collectionViewCellSpacing
+        flowLayout.itemSize = CGSize(width: widthAvailableForCellsInRow / collectionViewCellsPerRow, height: widthAvailableForCellsInRow / collectionViewCellsPerRow)
         
         // update progressView frame on navBar
         if let navBar = navigationController?.navigationBar {
@@ -608,7 +608,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                  test if download complete...first flick may be the only flick
                  found, want to return to normal
                 */
-                if progress >= DOWNLOAD_COMPLETE {
+                if progress >= albumDownloadComplete {
                     mode = .normal
                 }
                 else {
@@ -628,7 +628,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                 progressView.setProgress(progress, animated: true)
                 
                 // downloading complete (progress >= 1.0)
-                if progress >= DOWNLOAD_COMPLETE {
+                if progress >= albumDownloadComplete {
                     
                     // return to normal mode
                     mode = .normal

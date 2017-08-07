@@ -18,9 +18,9 @@ import MapKit
 struct FlickrAPI {
     
     // constants
-    let SEARCH_RADIUS: Double = 10.0    // default search radius
-    let MAX_IMAGES: Int = 50            // maximum number of images to download
-    let MAX_FLICKS: Int = 4000          // maximum number of flicks that Flickr will return
+    let searchRadius: Double = 10.0                     // default search radius
+    let maximumImageDownloadCount: Int = 50             // maximum number of images to download
+    let maxFlicksReturnedByFlickr: Int = 4000           // maximum number of flicks that Flickr will return
     
     // create a flickr album
     func createFlickrAlbumForPin(_ pin: Pin,
@@ -96,7 +96,7 @@ struct FlickrAPI {
                 }
                 
                 // Flickr has photo limit. Get max allowable page search, generate a random page
-                let pageLimit = min(pages, self.MAX_FLICKS / perPage)
+                let pageLimit = min(pages, self.maxFlicksReturnedByFlickr / perPage)
                 let randomPage = Int(arc4random_uniform(UInt32(pageLimit))) + 1
                 
                 // run new search using random page
@@ -119,7 +119,7 @@ struct FlickrAPI {
                 var urlStrings = [String]()
                 for photos in photosArray {
                     if let urlString = photos[FlickrAPI.Values.mediumURL] as? String,
-                        urlStrings.count < self.MAX_IMAGES {
+                        urlStrings.count < self.maximumImageDownloadCount {
                         urlStrings.append(urlString)
                     }
                 }
@@ -146,7 +146,7 @@ struct FlickrAPI {
                      FlickrAPI.Keys.safeSearch: FlickrAPI.Values.safeSearch,
                      FlickrAPI.Keys.longitude: "\(coordinate.longitude)",
             FlickrAPI.Keys.latitude: "\(coordinate.latitude)",
-            FlickrAPI.Keys.radius: "\(self.SEARCH_RADIUS)"]
+            FlickrAPI.Keys.radius: "\(self.searchRadius)"]
         
         // include page search if non-nil
         if let page = page {

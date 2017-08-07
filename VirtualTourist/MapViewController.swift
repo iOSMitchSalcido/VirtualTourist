@@ -23,12 +23,12 @@ import CoreData
 class MapViewController: UIViewController {
 
     // constants
-    let USER_LOCATION_KmACCURACY: CLLocationAccuracy = 5.0  // user location, Km accuracy
-    let USER_SPAN_DEGREES: CLLocationDegrees = 0.3          // user location span
+    let userLocationAccuracyKm: CLLocationAccuracy = 5.0    // user location, Km accuracy
+    let userSpanDegrees: CLLocationDegrees = 0.3            // user location span
     
     // constant for default location name in event that placemark can't determine location
     // during reverse geocode.
-    let DEFAULT_LOCATION_TITLE = "Location"
+    let defaultLocationTitle = "Location"
     
     // view objects
     @IBOutlet weak var mapView: MKMapView!          // ref to mapView
@@ -59,8 +59,8 @@ class MapViewController: UIViewController {
         // .. searchBbi creation is handled in coreLocation delegate
         let coreLocationAuthStatus = CLLocationManager.authorizationStatus()
         locationManager = CLLocationManager()
-        locationManager.desiredAccuracy = kCLLocationAccuracyKilometer * USER_LOCATION_KmACCURACY
-        locationManager.distanceFilter = kCLLocationAccuracyKilometer * USER_LOCATION_KmACCURACY
+        locationManager.desiredAccuracy = kCLLocationAccuracyKilometer * userLocationAccuracyKm
+        locationManager.distanceFilter = kCLLocationAccuracyKilometer * userLocationAccuracyKm
         locationManager.delegate = self
 
         // test location auth status
@@ -350,8 +350,8 @@ extension MapViewController: CLLocationManagerDelegate {
         
         // zoom in to user location
         let coordinate = location.coordinate
-        let span = MKCoordinateSpan(latitudeDelta: USER_SPAN_DEGREES,
-                                    longitudeDelta: USER_SPAN_DEGREES)
+        let span = MKCoordinateSpan(latitudeDelta: userSpanDegrees,
+                                    longitudeDelta: userSpanDegrees)
         let region = MKCoordinateRegion(center: coordinate, span: span)
         mapView.setRegion(region, animated: true)
     }
@@ -430,7 +430,7 @@ extension MapViewController {
             }
             
             // set default location title, then test for valid placemark data for use as title
-            var locationTitle = self.DEFAULT_LOCATION_TITLE
+            var locationTitle = self.defaultLocationTitle
             if let placemark = placemarks?.first {
              
                 if let locality = placemark.locality {
