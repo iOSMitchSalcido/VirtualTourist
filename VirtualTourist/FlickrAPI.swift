@@ -12,8 +12,12 @@
  */
 
 import Foundation
-import CoreData
-import MapKit
+
+// struct for coordinate
+struct FlickrCoordinate {
+    let latitude: Double
+    let longitude: Double
+}
 
 struct FlickrAPI {
     
@@ -23,32 +27,24 @@ struct FlickrAPI {
     let maxFlicksReturnedByFlickr: Int = 4000           // maximum number of flicks that Flickr will return
     
     // create a flickr album
-    func createFlickrAlbumForPin(_ pin: Pin,
-                                  page: Int?,
-                                  completion: @escaping ([String]?, VTError?) -> Void) {
+    func createFlickrAlbumForCoordinate(_ coordinate: FlickrCoordinate,
+                                 page: Int?,
+                                 completion: @escaping ([String]?, VTError?) -> Void) {
         /*
          Handle downloading an "album" of flicks from flickr. Pin is passed as an argument to pull location info
          for flickr search.
          
          Arguments passed into function:
-         - pin, a Pin MO with valid coordinate
+         - coordinate, FlickrCoordinate as defined above
          - page, !! page must be nil !! ..this argument is used recursively on a second call to this function below
          
          
          Completion:
          - [String]?, Array of urls in string format. Array contains url's of flicks found during search
          - VTError?, error enum defined in file Networking
-        */
+         */
         
-        // verify good coordinates
-        guard let longitude = pin.coordinate?.longitude,
-            let latitude = pin.coordinate?.latitude else {
-                completion(nil, VTError.operatorError("Bad Pin/Location"))
-                return
-        }
-        
-        // create a CLLocationCoord and invoke search
-        let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+        // invoke search
         let params = createPhotoSearchParamsForCoordinate(coordinate, page: page)
         
         // network task
@@ -75,9 +71,9 @@ struct FlickrAPI {
             
             // retrieve Flickr data
             guard let photosDict = data[FlickrAPI.Keys.photosDictionary] as? [String: AnyObject],
-            let items = params[Networking.Keys.items] as? [String: AnyObject] else {
-                completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
-                return
+                let items = params[Networking.Keys.items] as? [String: AnyObject] else {
+                    completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
+                    return
             }
             
             // test if page was a search param
@@ -86,7 +82,7 @@ struct FlickrAPI {
                 /*
                  page NOT a search param. Retrieve number of available pages, get a random page
                  and perform a new search
-                */
+                 */
                 
                 // get page info
                 guard let pages = photosDict[FlickrAPI.Keys.pages] as? Int,
@@ -100,7 +96,7 @@ struct FlickrAPI {
                 let randomPage = Int(arc4random_uniform(UInt32(pageLimit))) + 1
                 
                 // run new search using random page
-                self.createFlickrAlbumForPin(pin, page: randomPage, completion: completion)
+                self.createFlickrAlbumForCoordinate(coordinate, page: randomPage, completion: completion)
             }
             else {
                 
@@ -131,7 +127,7 @@ struct FlickrAPI {
     }
     
     // helper function to create params used by data task for flick search
-    func createPhotoSearchParamsForCoordinate(_ coordinate: CLLocationCoordinate2D, page: Int?) -> [String: AnyObject] {
+    func createPhotoSearchParamsForCoordinate(_ coordinate: FlickrCoordinate, page: Int?) -> [String: AnyObject] {
         
         /*
          Build params for network task using location, page, and constants defined below...

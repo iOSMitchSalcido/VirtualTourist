@@ -104,8 +104,15 @@ extension UIViewController {
         pin.isDownloading = true
         pin.noFlicksAtLocation = false
         
+        guard let latitude = pin.coordinate?.latitude,
+            let longitude = pin.coordinate?.longitude else {
+                presentAlertForError(VTError.operatorError("Invalid cooridnate for Pin"))
+                return
+        }
+        
         // begin download of new album using API call
-        FlickrAPI().createFlickrAlbumForPin(pin, page: nil) {
+        let coordinate = FlickrCoordinate(latitude: latitude, longitude: longitude)
+        FlickrAPI().createFlickrAlbumForCoordinate(coordinate, page: nil) {
             (data, error) in
             
             // test error, show alert if error
