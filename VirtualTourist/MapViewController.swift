@@ -129,7 +129,7 @@ class MapViewController: UIViewController {
             }
         } catch {
             // fetch error
-            presentAlertForError(VTError.coreData("Unable to retrieve Pins"))
+            presentAlertForLocalizedError(CoreDataError.fetch("Unable to fetch saved Pins."))
             return
         }
         
@@ -360,7 +360,7 @@ extension MapViewController: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         
         // location error. Show alert
-        presentAlertForError(VTError.locationError("User location search failure."))
+        presentAlertForLocalizedError(LocationError.location("Failure finding user location."))
     }
     
     // handle CL auth
@@ -415,13 +415,13 @@ extension MapViewController {
                 // error...present in alert with message and  remove annot pin from map
                 switch error {
                 case .locationUnknown:
-                    self.presentAlertForError(VTError.locationError("Unknown location"))
+                    self.presentAlertForLocalizedError(LocationError.location("Unknown location."))
                 case .network:
-                    self.presentAlertForError(VTError.locationError("Network unavailable"))
+                    self.presentAlertForLocalizedError(LocationError.status("Location network unavailable."))
                 case .geocodeFoundNoResult:
-                    self.presentAlertForError(VTError.locationError("Geocode yielded no result"))
+                    self.presentAlertForLocalizedError(LocationError.location("Geocode yielded no result."))
                 default:
-                    self.presentAlertForError(VTError.locationError("Unknown geocoding error"))
+                    self.presentAlertForLocalizedError(LocationError.status("Unknown geocoding error."))
                 }
                 
                 self.mapView.removeAnnotation(annotation)
@@ -470,7 +470,7 @@ extension MapViewController {
                 DispatchQueue.main.async {
                     annotation.pin = nil
                     self.mapView.removeAnnotation(annotation)
-                    self.presentAlertForError(VTError.coreData("Unable to create/save Pin"))
+                    self.presentAlertForLocalizedError(CoreDataError.save("Error saving new Pin."))
                     return
                 }
             }

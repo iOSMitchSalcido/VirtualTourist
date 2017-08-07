@@ -165,7 +165,7 @@ class AlbumViewController: UIViewController {
             configureImagePreviewScrollView()
         } catch {
             // fetch error..present alert
-            presentAlertForError(VTError.coreData(error.localizedDescription))
+            presentAlertForLocalizedError(CoreDataError.fetch("Error fetching saved flicks."))
         }
     }
     

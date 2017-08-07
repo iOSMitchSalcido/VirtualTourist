@@ -16,25 +16,53 @@
 
 import Foundation
 
-// errors
-enum VTError: Swift.Error {
-    case locationError(String)  // location error, CGCoding, etc
-    case networkError(String)   // problems in URLSessionDataTask, networking errors
-    case operatorError(String)  // issues such as typos, bad username/password, etc
-    case generalError(String)   // misc/unknown error, etc
-    case coreData(String)       // coreData related issue
-}
-
-enum NetworkingError: LocalizedError {
-    case url(String)
-    case response(String)
-    case data(String)
-}
-
 struct Networking {
     
+    // network error handling
+    fileprivate enum NetworkingError: LocalizedError {
+        case url(String)
+        case data(String)
+        case response(Int?)
+        case task
+        
+        // description: For use in Alert Title
+        var errorDescription: String? {
+            get {
+                switch self {
+                case .url:
+                    return "Network Error: URL"
+                case .data:
+                    return "Network Error: Data"
+                case .response:
+                    return "Newtork Error: Response"
+                case .task:
+                    return "Newtork Error: Task"
+                }
+            }
+        }
+        
+        // reason: For use in Alert Message
+        var failureReason: String? {
+            get {
+                switch self {
+                case .url(let value):
+                    return value
+                case .data(let value):
+                    return value
+                case .response(let value):
+                    if let value = value {
+                        return "Bad response code returned: \(value)"
+                    }
+                    return "Bad response. No status code returned"
+                case .task:
+                    return "Network task error encountered"
+                }
+            }
+        }
+    }
+    
     // run a data task using parameters and completion
-    func dataTaskForParameters(_ params: [String: AnyObject], completion: @escaping ([String:AnyObject]?, VTError?) -> Void) {
+    func dataTaskForParameters(_ params: [String: AnyObject], completion: @escaping ([String:AnyObject]?, LocalizedError?) -> Void) {
         
         /*
          Handle creation/running of dataTask
@@ -42,7 +70,7 @@ struct Networking {
         
         // test for good url
         guard let url = urlForParameters(params) else {
-            completion(nil, VTError.networkError("Unable to create value URL"))
+            completion(nil, NetworkingError.url("Unusable or missing URL."))
             return
         }
         
@@ -55,29 +83,34 @@ struct Networking {
             
             // check error
             guard error == nil else {
-                completion(nil, VTError.networkError("Error during data task"))
+                completion(nil, NetworkingError.task)
                 return
             }
             
             // check status code in response..test for non 2xx
             guard let status = (response as? HTTPURLResponse)?.statusCode,
                 status >= 200, status <= 299 else {
-                    completion(nil, VTError.networkError("Bad status code returned: non 2xx"))
+                    if let status = (response as? HTTPURLResponse)?.statusCode {
+                        completion(nil, NetworkingError.response(status))
+                    }
+                    else {
+                        completion(nil, NetworkingError.response(nil))
+                    }
                     return
             }
-            
+
             // check data
             guard let data = data else {
-                completion(nil, VTError.networkError("Bad data returned from data task"))
+                completion(nil, NetworkingError.data("Bad or missing data returned."))
                 return
             }
-            
+
             // convert data to json
             var jsonData: [String: AnyObject]!
             do {
                 jsonData = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as! [String:AnyObject]
             } catch {
-                completion(nil, VTError.networkError("Unable to convert returned data to usable format"))
+                completion(nil, NetworkingError.data("Unable to convert returned network data to usable JSON format."))
                 return
             }
             

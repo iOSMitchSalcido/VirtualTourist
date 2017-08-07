@@ -21,6 +21,36 @@ struct FlickrCoordinate {
 
 class FlickrAPI {
     
+    // network error handling
+    fileprivate enum FlickrApiError: LocalizedError {
+        case data(String)
+        case task
+        
+        // description: For use in Alert Title
+        var errorDescription: String? {
+            get {
+                switch self {
+                case .data:
+                    return "Flickr Error: Data"
+                case .task:
+                    return "Flickr Error: Task"
+                }
+            }
+        }
+        
+        // reason: For use in Alert Message
+        var failureReason: String? {
+            get {
+                switch self {
+                case .data(let value):
+                    return value
+                case .task:
+                    return "Flickr method task error encountered"
+                }
+            }
+        }
+    }
+    
     // ref to Networking
     let networking: Networking
     
@@ -38,7 +68,7 @@ class FlickrAPI {
     // create a flickr album
     func createFlickrAlbumForCoordinate(_ coordinate: FlickrCoordinate,
                                  page: Int?,
-                                 completion: @escaping ([String]?, VTError?) -> Void) {
+                                 completion: @escaping ([String]?, LocalizedError?) -> Void) {
         /*
          Handle downloading an "album" of flicks from flickr. Pin is passed as an argument to pull location info
          for flickr search.
@@ -62,13 +92,13 @@ class FlickrAPI {
             
             // test error
             guard error == nil else {
-                completion(nil, VTError.networkError("Error search for flicks"))
+                completion(nil, error)
                 return
             }
             
             // test data
             guard let data = data else {
-                completion(nil, VTError.networkError("Bad data returned from Flickr"))
+                completion(nil, error)
                 return
             }
             
@@ -81,7 +111,7 @@ class FlickrAPI {
             // retrieve Flickr data
             guard let photosDict = data[FlickrAPI.Keys.photosDictionary] as? [String: AnyObject],
                 let items = params[Networking.Keys.items] as? [String: AnyObject] else {
-                    completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
+                    completion(nil, FlickrApiError.data("Photo info missing from Flickr data."))
                     return
             }
             
@@ -96,7 +126,7 @@ class FlickrAPI {
                 // get page info
                 guard let pages = photosDict[FlickrAPI.Keys.pages] as? Int,
                     let perPage = photosDict[FlickrAPI.Keys.perPage] as? Int else {
-                        completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
+                        completion(nil, FlickrApiError.data("Page info missing from Flickr data."))
                         return
                 }
                 
@@ -116,7 +146,7 @@ class FlickrAPI {
                 
                 // page was a search param..proceed to retrieve flick URL's as strings
                 guard let photosArray = photosDict[FlickrAPI.Keys.photosArray] as? [[String: AnyObject]] else {
-                    completion(nil, VTError.networkError("Unable to retrieve Flickr data"))
+                    completion(nil, FlickrApiError.data("No photos returned from Flickr."))
                     return
                 }
                 

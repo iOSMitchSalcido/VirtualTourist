@@ -17,8 +17,100 @@
 import UIKit
 import CoreData
 
+// enums for error: CoreData and location
+extension UIViewController {
+    
+    // Core data errors
+    enum CoreDataError: LocalizedError {
+        case fetch(String)
+        case save(String)
+        case data(String)
+        
+        // description: For use in Alert Title
+        var errorDescription: String? {
+            get {
+                switch self {
+                case .fetch:
+                    return "CoreData Error: Fetch"
+                case .save:
+                    return "CoreData Error: Save"
+                case .data:
+                    return "CoreData Error: Data"
+                }
+            }
+        }
+        
+        // reason: For use in Alert Message
+        var failureReason: String? {
+            get {
+                switch self {
+                case .fetch(let value):
+                    return value
+                case .save(let value):
+                    return value
+                case .data(let value):
+                    return value
+                }
+            }
+        }
+    }
+    
+    // Core data errors
+    enum LocationError: LocalizedError {
+        case location(String)
+        case status(String)
+        
+        // description: For use in Alert Title
+        var errorDescription: String? {
+            get {
+                switch self {
+                case .location:
+                    return "Location Error: Location"
+                case .status:
+                    return "Location Error: Status"
+                }
+            }
+        }
+        
+        // reason: For use in Alert Message
+        var failureReason: String? {
+            get {
+                switch self {
+                case .location(let value):
+                    return value
+                case .status(let value):
+                    return value
+                }
+            }
+        }
+    }
+}
+
 // alerts
 extension UIViewController {
+    
+    // Alert for error handling
+    func presentAlertForLocalizedError(_ error: LocalizedError) {
+        
+        /*
+         Alert controller: Create and present an alert with "OK" button..used to provide user feedback for error
+         */
+        
+        var alertTitle = "Unknown Error"
+        var alertMessage = "Please close app and then re-start"
+        
+        if let title = error.errorDescription {
+            alertTitle = title
+        }
+        
+        if let message = error.failureReason {
+            alertMessage = message
+        }
+        
+        let alert = UIAlertController(title: alertTitle, message: alertMessage, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
     
     // procced/cancel alert
     func presentProceedCancelAlert(title: String? = nil, message: String? = nil, completion: ((UIAlertAction) -> Void)?) {
@@ -55,38 +147,6 @@ extension UIViewController {
         alert.addAction(cancelAction)
         present(alert, animated: true)
     }
-    
-    // Alert for error handling
-    func presentAlertForError(_ error: VTError) {
-        
-        /*
-         Alert controller: Create and present an alert with "OK" button..used to provide user feedback for error
-         */
-        
-        var alertTitle: String!
-        var alertMessage: String!
-        switch error {
-        case .locationError(let value):
-            alertTitle = "Location Error"
-            alertMessage = value
-        case .generalError(let value):
-            alertTitle = "General Error"
-            alertMessage = value
-        case .networkError(let value):
-            alertTitle = "Network Error"
-            alertMessage = value
-        case .operatorError(let value):
-            alertTitle = "Operator Error"
-            alertMessage = value
-        case .coreData(let value):
-            alertTitle = "Core Data Error"
-            alertMessage = value
-        }
-        
-        let alert = UIAlertController(title: alertTitle, message: alertMessage, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
-    }
 }
 
 // related to core data and Flick downloading
@@ -106,7 +166,7 @@ extension UIViewController {
         
         guard let latitude = pin.coordinate?.latitude,
             let longitude = pin.coordinate?.longitude else {
-                presentAlertForError(VTError.operatorError("Invalid cooridnate for Pin"))
+                presentAlertForLocalizedError(CoreDataError.data("Bad coordinate data for Pin."))
                 return
         }
         
@@ -118,7 +178,7 @@ extension UIViewController {
             // test error, show alert if error
             guard error == nil else {
                 DispatchQueue.main.async {
-                    self.presentAlertForError(error!)
+                    self.presentAlertForLocalizedError(error!)
                 }
                 return
             }
@@ -126,7 +186,7 @@ extension UIViewController {
             // test data, show alert if bad data
             guard let data = data else {
                 DispatchQueue.main.async {
-                    self.presentAlertForError(VTError.networkError("Bad data returned from Flickr."))
+                    self.presentAlertForLocalizedError(error!)
                 }
                 return
             }
