@@ -337,7 +337,7 @@ extension UIViewController {
             }
         }
     }
-
+    
     // resume download
     func resumeAlbumDownloadForPin(_ pin: Pin, stack: CoreDataStack) {
         
