@@ -18,49 +18,6 @@ import Foundation
 
 struct Networking {
     
-    // network error handling
-    fileprivate enum NetworkingError: LocalizedError {
-        case url(String)
-        case data(String)
-        case response(Int?)
-        case task
-        
-        // description: For use in Alert Title
-        var errorDescription: String? {
-            get {
-                switch self {
-                case .url:
-                    return "Network Error: URL"
-                case .data:
-                    return "Network Error: Data"
-                case .response:
-                    return "Newtork Error: Response"
-                case .task:
-                    return "Newtork Error: Task"
-                }
-            }
-        }
-        
-        // reason: For use in Alert Message
-        var failureReason: String? {
-            get {
-                switch self {
-                case .url(let value):
-                    return value
-                case .data(let value):
-                    return value
-                case .response(let value):
-                    if let value = value {
-                        return "Bad response code returned: \(value)"
-                    }
-                    return "Bad response. No status code returned"
-                case .task:
-                    return "Network task error encountered"
-                }
-            }
-        }
-    }
-    
     // run a data task using parameters and completion
     func dataTaskForParameters(_ params: [String: AnyObject], completion: @escaping ([String:AnyObject]?, LocalizedError?) -> Void) {
         
@@ -148,6 +105,54 @@ struct Networking {
     }
 }
 
+// error handling
+extension Networking {
+    
+    // network error handling
+    fileprivate enum NetworkingError: LocalizedError {
+        case url(String)
+        case data(String)
+        case response(Int?)
+        case task
+        
+        // description: For use in Alert Title
+        var errorDescription: String? {
+            get {
+                switch self {
+                case .url:
+                    return "Network Error: URL"
+                case .data:
+                    return "Network Error: Data"
+                case .response:
+                    return "Newtork Error: Response"
+                case .task:
+                    return "Newtork Error: Task"
+                }
+            }
+        }
+        
+        // reason: For use in Alert Message
+        var failureReason: String? {
+            get {
+                switch self {
+                case .url(let value):
+                    return value
+                case .data(let value):
+                    return value
+                case .response(let value):
+                    if let value = value {
+                        return "Bad response code returned: \(value)"
+                    }
+                    return "Bad response. No status code returned"
+                case .task:
+                    return "Network task error encountered"
+                }
+            }
+        }
+    }
+}
+
+// constants
 extension Networking {
     
     // Constants keys for sifting out dictionaries in params passed into taskWithParams

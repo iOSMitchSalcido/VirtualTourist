@@ -21,36 +21,6 @@ struct FlickrCoordinate {
 
 class FlickrAPI {
     
-    // network error handling
-    fileprivate enum FlickrApiError: LocalizedError {
-        case data(String)
-        case task
-        
-        // description: For use in Alert Title
-        var errorDescription: String? {
-            get {
-                switch self {
-                case .data:
-                    return "Flickr Error: Data"
-                case .task:
-                    return "Flickr Error: Task"
-                }
-            }
-        }
-        
-        // reason: For use in Alert Message
-        var failureReason: String? {
-            get {
-                switch self {
-                case .data(let value):
-                    return value
-                case .task:
-                    return "Flickr method task error encountered"
-                }
-            }
-        }
-    }
-    
     // ref to Networking
     let networking: Networking
     
@@ -193,6 +163,40 @@ class FlickrAPI {
                 Networking.Keys.host: FlickrAPI.Subcomponents.host as AnyObject,
                 Networking.Keys.scheme: FlickrAPI.Subcomponents.scheme as AnyObject,
                 Networking.Keys.path: FlickrAPI.Subcomponents.path as AnyObject]
+    }
+}
+
+// error handling
+extension FlickrAPI {
+    
+    // network error handling
+    fileprivate enum FlickrApiError: LocalizedError {
+        case data(String)
+        case task
+        
+        // description: For use in Alert Title
+        var errorDescription: String? {
+            get {
+                switch self {
+                case .data:
+                    return "Flickr Error: Data"
+                case .task:
+                    return "Flickr Error: Task"
+                }
+            }
+        }
+        
+        // reason: For use in Alert Message
+        var failureReason: String? {
+            get {
+                switch self {
+                case .data(let value):
+                    return value
+                case .task:
+                    return "Flickr method task error encountered"
+                }
+            }
+        }
     }
 }
 
