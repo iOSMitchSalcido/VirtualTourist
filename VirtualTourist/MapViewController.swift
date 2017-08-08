@@ -34,8 +34,8 @@ class MapViewController: UIViewController {
     @IBOutlet weak var mapView: MKMapView!          // ref to mapView
     @IBOutlet weak var titleImageView: UIImageView! // ref to nav titleImageView
     
-    // CoreData
-    var stack: CoreDataStack!               // ref to CoreDataStack
+    // CoreData stack
+    var stack: CoreDataStack!
     
     // ref to search bbi. Zoom to user's current location when pressed
     var searchBbi: UIBarButtonItem!
