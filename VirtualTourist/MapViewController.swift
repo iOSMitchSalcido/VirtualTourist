@@ -424,6 +424,7 @@ extension MapViewController {
                     self.presentAlertForLocalizedError(LocationError.status("Unknown geocoding error."))
                 }
                 
+                // remove annotation...unusable location
                 self.mapView.removeAnnotation(annotation)
                 
                 return
