@@ -109,7 +109,7 @@ struct Networking {
 extension Networking {
     
     // network error handling
-    fileprivate enum NetworkingError: LocalizedError {
+    enum NetworkingError: LocalizedError {
         case url(String)
         case data(String)
         case response(Int?)

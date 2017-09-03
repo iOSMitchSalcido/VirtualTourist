@@ -626,7 +626,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
     }
 }
 
-// helper function
+// MARK: Helper Functions
 extension AlbumViewController {
     
     // return download progress 0.0 -> no downloads yet. 1.0 -> downloads complete

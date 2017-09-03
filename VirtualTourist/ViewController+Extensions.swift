@@ -175,7 +175,7 @@ extension UIViewController {
         
         guard let latitude = pin.coordinate?.latitude,
             let longitude = pin.coordinate?.longitude else {
-                presentAlertForLocalizedError(CoreDataError.data("Bad coordinate data for Pin."))
+                presentAlertForLocalizedError(LocationError.location("Bad location data for Pin"))
                 return
         }
         
@@ -195,7 +195,8 @@ extension UIViewController {
             // test data, show alert if bad data
             guard let data = data else {
                 DispatchQueue.main.async {
-                    self.presentAlertForLocalizedError(error!)
+                    let error = Networking.NetworkingError.data("Bad data or network issue")
+                    self.presentAlertForLocalizedError(error)
                 }
                 return
             }

@@ -68,7 +68,7 @@ class FlickrAPI {
             
             // test data
             guard let data = data else {
-                completion(nil, error)
+                completion(nil, Networking.NetworkingError.data("Bad data returned from network"))
                 return
             }
             
