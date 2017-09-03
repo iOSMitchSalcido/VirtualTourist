@@ -76,6 +76,9 @@ class AlbumViewController: UIViewController {
     // used to track cells/flicks to be deleted when trash bbi pressed
     var selectedCellsIndexPaths = [IndexPath]()
 
+    // store completions for batch updates in collectionView
+    var cvBatchCompletionsArray = [()->Void]()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -549,6 +552,10 @@ extension AlbumViewController: UICollectionViewDelegate {
 // MARK: NSFetchedResultsController Delegate methods
 extension AlbumViewController: NSFetchedResultsControllerDelegate {
     
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        
+        cvBatchCompletionsArray.removeAll(keepingCapacity: false)
+    }
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         
         /*
@@ -557,23 +564,16 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         
         switch type {
         case .insert:
-            collectionView.reloadData()
+            cvBatchCompletionsArray.append {
+                self.collectionView.insertItems(at: [newIndexPath!])
+            }
         case .delete:
-            collectionView.reloadData()
+            cvBatchCompletionsArray.append {
+                self.collectionView.deleteItems(at: [indexPath!])
+            }
         case .update:
-            // handle updating cell with newly downloaded flick
-            if let indexPath = indexPath {
-                
-                // get flick image data, image, and cell
-                if let imageData = fetchedResultsController.object(at: indexPath).image as Data?,
-                    let image = UIImage(data: imageData),
-                    let cell = collectionView.cellForItem(at: indexPath) as? PhotoCell{
-                    
-                    // update cell with flick, hide activityIndicator
-                    cell.imageView.image = image
-                    cell.activityIndicator.stopAnimating()
-                    cell.activityIndicator.isHidden = true
-                }
+            cvBatchCompletionsArray.append {
+                self.collectionView.reloadItems(at: [indexPath!])
             }
         default:
             break
@@ -587,6 +587,13 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
          to indicate status of downloading when complete
         */
 
+        collectionView.performBatchUpdates({
+            
+            for op in self.cvBatchCompletionsArray {
+                op()
+            }
+        })
+        
         // test for no flicks found
         guard pin.noFlicksAtLocation == false else {
             mode = .noFlicksFound
@@ -638,7 +645,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                     configureImagePreviewScrollView()
                     
                     // reload table...
-                    collectionView.reloadData()
+                    //collectionView.reloadData()
                     
                     // animate out progressView
                     UIView.animate(withDuration: 0.3) {
