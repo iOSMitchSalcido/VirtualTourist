@@ -9,10 +9,10 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--App Help View Controller-->
+        <!--View Controller-->
         <scene sceneID="0KT-0Z-qB5">
             <objects>
-                <viewController storyboardIdentifier="AppHelpViewControllerID" id="YuW-XN-qwc" customClass="AppHelpViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="AppHelpViewControllerID" id="YuW-XN-qwc" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="f97-Id-3hY"/>
                         <viewControllerLayoutGuide type="bottom" id="dym-uV-vJu"/>
@@ -64,7 +64,7 @@
                         </view>
                         <barButtonItem key="rightBarButtonItem" systemItem="done" id="1ZK-aF-fml">
                             <connections>
-                                <action selector="doneBbiPressed:" destination="YuW-XN-qwc" id="qT9-Uz-BxL"/>
+                                <action selector="doneBbiPresses:" destination="YuW-XN-qwc" id="6Gc-l0-6UD"/>
                             </connections>
                         </barButtonItem>
                     </navigationItem>

@@ -17,6 +17,15 @@
 import UIKit
 import CoreData
 
+// dismiss VC & common bbi functions
+extension UIViewController {
+    
+    // for dismissing VC when a done bbi pressed
+    @IBAction func doneBbiPresses(_ bbi: UIBarButtonItem) {
+        dismiss(animated: true, completion: nil);
+    }
+}
+
 // enums for error: CoreData and location
 extension UIViewController {
     
