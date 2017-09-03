@@ -149,7 +149,7 @@ class AlbumViewController: UIViewController {
                 mode = .preDownloading
             }
             else if pin.isDownloading && !(fetchedResultsController.fetchedObjects?.isEmpty)! {
-                // pin is downloading, flicks have been retrieved
+                // pin is downloading, some flicks have been retrieved
                 mode = .downloading
             }
             else if pin.noFlicksAtLocation {
@@ -157,15 +157,13 @@ class AlbumViewController: UIViewController {
                 mode = .noFlicksFound
             }
             else {
-                // complete or no flicks
+                // download was completed
                 mode = .normal
+                configureImagePreviewScrollView()
             }
             
             // configure UI
             configureBars()
-            
-            // scrollView
-            configureImagePreviewScrollView()
         } catch {
             // fetch error..present alert
             presentAlertForLocalizedError(CoreDataError.fetch("Error fetching saved flicks."))
@@ -554,8 +552,15 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
     
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         
+        // new frc changes..clear array for new completions
         cvBatchCompletionsArray.removeAll(keepingCapacity: false)
+        
+        if mode == .preDownloading {
+            mode = .downloading
+            configureBars()
+        }
     }
+    
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         
         /*
@@ -587,6 +592,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
          to indicate status of downloading when complete
         */
 
+        // fire batch updates
         collectionView.performBatchUpdates({
             
             for op in self.cvBatchCompletionsArray {
@@ -594,42 +600,8 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
             }
         })
         
-        // test for no flicks found
-        guard pin.noFlicksAtLocation == false else {
-            mode = .noFlicksFound
-            configureBars()
-            return
-        }
-        
-        switch mode {
-        case .preDownloading:
-            /*
-             currently in .preDownloading mode (no flicks received yet)
-             Test download progress. When at least one download has been received, remove
-             from preDownloading and place into .downloading mode
-            */
+        if mode == .downloading {
             
-            if let progress = downloadProgress() {
-                
-                /*
-                 test if download complete...first flick may be the only flick
-                 found, want to return to normal
-                */
-                if progress >= albumDownloadComplete {
-                    mode = .normal
-                }
-                else {
-                    mode = .downloading
-                }
-                
-                configureBars()
-            }
-        case .downloading:
-            /*
-             currently downloading.
-             test downloadProgress and update progressView. When download has been complete, remove
-             from .download mode and place in .normal mode
-            */
             if let progress = downloadProgress() {
                 
                 progressView.setProgress(progress, animated: true)
@@ -644,17 +616,12 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                     // config scrollView with images
                     configureImagePreviewScrollView()
                     
-                    // reload table...
-                    //collectionView.reloadData()
-                    
                     // animate out progressView
                     UIView.animate(withDuration: 0.3) {
                         self.progressView.alpha = 0.0
                     }
                 }
             }
-        default:
-            break
         }
     }
 }
