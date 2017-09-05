@@ -291,39 +291,20 @@ extension MapViewController: MKMapViewDelegate {
         // left accessory. Delete Pin
         if control == view.leftCalloutAccessoryView {
             
-            // create proceed/cancel alert to handle deleting location
-            presentProceedCancelAlert(title: "Delete Location ?", message: "Delete location and Flick's") {
-                (action) in
+            // remove pin from map
+            mapView.removeAnnotation(annotation)
+            annotation.pin = nil
+            
+            // perform on private context/queue
+            let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+            privateContext.parent = self.stack.context
+            privateContext.perform {
                 
-                // remove pin from map
-                mapView.removeAnnotation(annotation)
-                annotation.pin = nil
-
-                // perform on private context/queue
-                let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-                privateContext.parent = self.stack.context
-                privateContext.perform {
-                    
-                    let privatePin = privateContext.object(with: pin.objectID) as! Pin
-                    privateContext.delete(privatePin)
-                    
-                    // save
-                    do {
-                        try privateContext.save()
-                        
-                        self.stack.context.performAndWait {
-                            do {
-                                try self.stack.context.save()
-                            } catch let error {
-                                print("error: \(error.localizedDescription)")
-                                return
-                            }
-                        }
-                    } catch let error {
-                        print("error: \(error.localizedDescription)")
-                        return
-                    }
-                }
+                let privatePin = privateContext.object(with: pin.objectID) as! Pin
+                privateContext.delete(privatePin)
+                
+                // save
+                let _ = self.stack.savePrivateContext(privateContext)
             }
         }
         // right accessory. Navigate to AlbumVC

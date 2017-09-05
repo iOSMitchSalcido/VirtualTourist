@@ -32,7 +32,7 @@ class FlickrAPI {
     
     // constants
     let searchRadius: Double = 10.0                     // default search radius
-    let maximumImageDownloadCount: Int = 50             // maximum number of images to download
+    let maximumImageDownloadCount: Int = 25             // maximum number of images to download
     let maxFlicksReturnedByFlickr: Int = 4000           // maximum number of flicks that Flickr will return
     
     // create a flickr album
