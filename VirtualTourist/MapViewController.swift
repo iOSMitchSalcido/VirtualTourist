@@ -429,31 +429,32 @@ extension MapViewController {
                 }
             }
             
-            // create coordinate MO
-            let newCoord = Coordinate(context: self.stack.context)
-            newCoord.latitude = Double(coordinate.latitude)
-            newCoord.longitude = Double(coordinate.longitude)
-            
-            // create Pin MO, config Pin and annot
-            let pin = Pin(context: self.stack.context)
-            pin.coordinate = newCoord
-            pin.title = locationTitle
-            annotation.title = locationTitle
-            annotation.pin = pin
-            
-            // save Pin
-            do {
-                try self.stack.context.save()
+            // perform pin creation on private queue/context
+            let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+            privateContext.parent = self.stack.context
+            privateContext.perform {
                 
-                // successful save. Download album
-                self.downloadAlbumForPin(pin, stack: self.stack)
-            } catch {
-                // bad Pin save. Remove annot and present error
-                DispatchQueue.main.async {
-                    annotation.pin = nil
-                    self.mapView.removeAnnotation(annotation)
-                    self.presentAlertForLocalizedError(CoreDataError.save("Error saving new Pin."))
-                    return
+                // create coordinate MO
+                let newCoord = Coordinate(context: privateContext)
+                newCoord.latitude = Double(coordinate.latitude)
+                newCoord.longitude = Double(coordinate.longitude)
+                
+                // create Pin MO, config Pin and annot
+                let pin = Pin(context: privateContext)
+                pin.coordinate = newCoord
+                pin.title = locationTitle
+                annotation.title = locationTitle
+                annotation.pin = pin
+                
+                // test for good save
+                if !self.stack.savePrivateContext(privateContext) {
+                    
+                    DispatchQueue.main.async {
+                        annotation.pin = nil
+                        self.mapView.removeAnnotation(annotation)
+                        self.presentAlertForLocalizedError(CoreDataError.save("Error saving new Pin."))
+                        return
+                    }
                 }
             }
         }
