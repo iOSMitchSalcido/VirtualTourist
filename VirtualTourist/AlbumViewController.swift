@@ -200,8 +200,8 @@ class AlbumViewController: UIViewController {
         // remove progressView from navBar...otherwise will be visible in invoking VC
         progressView?.removeFromSuperview()
         
+        // nil..otherwise will keep VC alive and continue updates
         fetchedResultsController.delegate = nil
-        
     }
     
     // handle view editing
