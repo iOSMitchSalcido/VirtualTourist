@@ -605,24 +605,23 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         
         if mode == .downloading {
             
-            if let progress = downloadProgress() {
+            let progress = downloadProgress()
+            
+            progressView.setProgress(progress, animated: true)
+            
+            // downloading complete (progress >= 1.0)
+            if progress >= albumDownloadComplete {
                 
-                progressView.setProgress(progress, animated: true)
+                // return to normal mode
+                mode = .normal
+                configureBars()
                 
-                // downloading complete (progress >= 1.0)
-                if progress >= albumDownloadComplete {
-                    
-                    // return to normal mode
-                    mode = .normal
-                    configureBars()
-                    
-                    // config scrollView with images
-                    configureImagePreviewScrollView()
-                    
-                    // animate out progressView
-                    UIView.animate(withDuration: 0.3) {
-                        self.progressView.alpha = 0.0
-                    }
+                // config scrollView with images
+                configureImagePreviewScrollView()
+                
+                // animate out progressView
+                UIView.animate(withDuration: 0.3) {
+                    self.progressView.alpha = 0.0
                 }
             }
         }
@@ -633,7 +632,7 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
 extension AlbumViewController {
     
     // return download progress 0.0 -> no downloads yet. 1.0 -> downloads complete
-    func downloadProgress() -> Float? {
+    func downloadProgress() -> Float {
         
         /*
          return download progress.
@@ -641,27 +640,21 @@ extension AlbumViewController {
          used for progressView updates
         */
         
-        // verify valid objects
-        guard let fetchedObjects = fetchedResultsController.fetchedObjects else {
-            return nil
+        // verify valid objects, non-zero count
+        guard let fetchedObjects = fetchedResultsController.fetchedObjects,
+            fetchedObjects.count > 0 else {
+                return 0.0
         }
         
         // count non-nil image, sum
         var downloadCount: Float = 0.0
-        for flick in fetchedResultsController.fetchedObjects! {
+        for flick in fetchedObjects {
             if flick.image != nil {
                 downloadCount = downloadCount + 1.0
             }
         }
-
-        // get count
-        let count = Float(fetchedObjects.count)
-        if count == 0.0 {
-            return 0.0
-        }
         
-        // return ratio
-        return downloadCount / count
+        return downloadCount / Float(fetchedObjects.count)
     }
     
     // load imagePreviewScrollView
@@ -764,11 +757,11 @@ extension AlbumViewController {
             activityIndicator.stopAnimating()
             
             // show progressView..with current download progress
-            if let progress = downloadProgress() {
-                
-                progressView.alpha = 1.0
-                progressView?.progress = progress
-            }
+            let progress = downloadProgress()
+            progressView?.progress = progress
+
+            // show progressView
+            progressView.alpha = 1.0
             
             // nil all bbi's on bars
             setToolbarItems(nil, animated: true)
