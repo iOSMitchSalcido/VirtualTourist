@@ -443,17 +443,24 @@ extension MapViewController {
                 let pin = Pin(context: privateContext)
                 pin.coordinate = newCoord
                 pin.title = locationTitle
-                annotation.title = locationTitle
-                annotation.pin = pin
                 
                 // test for good save
                 if !self.stack.savePrivateContext(privateContext) {
                     
+                    // bad save, remove annotation and show alert
                     DispatchQueue.main.async {
-                        annotation.pin = nil
                         self.mapView.removeAnnotation(annotation)
                         self.presentAlertForLocalizedError(CoreDataError.save("Error saving new Pin."))
-                        return
+                    }
+                }
+                else {
+                    
+                    // good save. Proceed to assign pin to annotaions, begin album download
+                    DispatchQueue.main.async {
+                        let pin = self.stack.context.object(with: pin.objectID) as! Pin
+                        annotation.title = locationTitle
+                        annotation.pin = pin;
+                        self.downloadAlbumForPin(pin, stack: self.stack)
                     }
                 }
             }
