@@ -9,10 +9,10 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--View Controller-->
+        <!--App Info View Controller-->
         <scene sceneID="0KT-0Z-qB5">
             <objects>
-                <viewController storyboardIdentifier="AppHelpViewControllerID" id="YuW-XN-qwc" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="AppHelpViewControllerID" id="YuW-XN-qwc" customClass="AppInfoViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="f97-Id-3hY"/>
                         <viewControllerLayoutGuide type="bottom" id="dym-uV-vJu"/>
@@ -21,14 +21,14 @@
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="305-97-J2A">
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" spacing="4" translatesAutoresizingMaskIntoConstraints="NO" id="305-97-J2A">
                                 <rect key="frame" x="0.0" y="64" width="320" height="504"/>
                                 <subviews>
-                                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppInfoTitle" translatesAutoresizingMaskIntoConstraints="NO" id="umi-YA-M5K">
-                                        <rect key="frame" x="0.0" y="0.0" width="320" height="249.5"/>
+                                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppInfoTitle_portrait" translatesAutoresizingMaskIntoConstraints="NO" id="umi-YA-M5K">
+                                        <rect key="frame" x="0.0" y="0.0" width="320" height="250"/>
                                     </imageView>
-                                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppInfoInstructions" translatesAutoresizingMaskIntoConstraints="NO" id="mE5-um-rSR">
-                                        <rect key="frame" x="0.0" y="254.5" width="320" height="249.5"/>
+                                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppInfoInstructions_portrait" translatesAutoresizingMaskIntoConstraints="NO" id="mE5-um-rSR">
+                                        <rect key="frame" x="0.0" y="254" width="320" height="250"/>
                                     </imageView>
                                 </subviews>
                                 <variation key="heightClass=compact" axis="horizontal"/>
@@ -68,6 +68,10 @@
                             </connections>
                         </barButtonItem>
                     </navigationItem>
+                    <connections>
+                        <outlet property="appInfoImageView" destination="umi-YA-M5K" id="4IH-UY-A6M"/>
+                        <outlet property="appInstructionsImageView" destination="mE5-um-rSR" id="z5w-wh-uPX"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="rJd-4C-ff1" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -280,9 +284,9 @@
         </scene>
     </scenes>
     <resources>
-        <image name="AppInfoInstructions" width="252" height="252"/>
-        <image name="AppInfoTitle" width="252" height="252"/>
+        <image name="AppInfoInstructions_portrait" width="320" height="250"/>
         <image name="AppInfoTitleImage" width="128" height="33"/>
+        <image name="AppInfoTitle_portrait" width="320" height="250"/>
         <image name="DefaultCVCellImage" width="100" height="100"/>
         <image name="SelectionCheckMark40pt" width="40" height="40"/>
     </resources>
