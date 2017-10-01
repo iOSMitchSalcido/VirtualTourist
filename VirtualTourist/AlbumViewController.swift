@@ -230,7 +230,7 @@ class AlbumViewController: UIViewController {
     }
     
     // action for single-tap gr
-    func singleTapDetected(_ sender: UITapGestureRecognizer) {
+    @objc func singleTapDetected(_ sender: UITapGestureRecognizer) {
         
         /*
          handle removing view from imagePreview mode
@@ -263,7 +263,7 @@ class AlbumViewController: UIViewController {
     }
     
     // handle trash bbi..delete flicks from collectionView
-    func trashBbiPressed(_ sender: UIBarButtonItem) {
+    @objc func trashBbiPressed(_ sender: UIBarButtonItem) {
         
         /*
          delete currently selected flicks in CV. Selected flicks are maintained as
@@ -324,7 +324,7 @@ class AlbumViewController: UIViewController {
     }
     
     // handle album reload
-    func reloadBbiPressed(_ sender: UIBarButtonItem) {
+    @objc func reloadBbiPressed(_ sender: UIBarButtonItem) {
      
         /*
          Reload album with a new set of flicks (discard flicks currently in cv.
@@ -392,7 +392,7 @@ class AlbumViewController: UIViewController {
     }
  
     // handle sharing flick
-    func shareFlickBbiPressed(_ sender: UIBarButtonItem) {
+    @objc func shareFlickBbiPressed(_ sender: UIBarButtonItem) {
  
         /*
          function to handle sharing a flick. The flick is retrieved from the imagePreviewScrollView

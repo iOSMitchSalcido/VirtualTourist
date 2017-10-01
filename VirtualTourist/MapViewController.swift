@@ -187,7 +187,7 @@ class MapViewController: UIViewController {
     }
     
     // infoBbi pressed
-    func appInfoBbiPressed () {
+    @objc func appInfoBbiPressed () {
         
         /*
          Invoke AppHelpVC
@@ -197,7 +197,7 @@ class MapViewController: UIViewController {
         present(controller, animated: true)
     }
     
-    func searchBbiPressed(_ sender: UIBarButtonItem) {
+    @objc func searchBbiPressed(_ sender: UIBarButtonItem) {
         
         /*
          Invoke location request from location manager...delegate method handles zooming to user location.
