@@ -50,12 +50,17 @@ class AlbumViewController: UIViewController {
         case noFlicksFound  // album has no flicks at Pin location
     }
     
+    /*
+     171008
+     Add FRCProgressStates, for aesthetics, want first default images to transform from small rect to normal size.
+     Added enum to track frc insertion states to determine if transform or normal when CV
+     is scrolled while in download state
+     */
     enum FRCProgressStates {
         case reload
         case inserting
         case doneInserting
     }
-    
     var loadState: FRCProgressStates = .doneInserting
     
     // track view mode. Initialize in preDownloading mode
@@ -83,9 +88,6 @@ class AlbumViewController: UIViewController {
     // array of cell indexPaths for cells that are currently selected (checkmark, ready to delete)
     // used to track cells/flicks to be deleted when trash bbi pressed
     var selectedCellsIndexPaths = [IndexPath]()
-
-    var loadedIndexPaths = [IndexPath]()
-    var insertCount: Int = 0
     
     // store completions for batch updates in collectionView
     var cvBatchCompletionsArray = [()->Void]()
@@ -342,11 +344,9 @@ class AlbumViewController: UIViewController {
          Reload album with a new set of flicks (discard flicks currently in cv.
          Present an alert/proceed if flick count > 0
         */
-        
-        loadedIndexPaths.removeAll()
-        insertCount = 0
+
+        // reload start..beginning new flick load
         loadState = .reload
-        print("reload")
         
         // declare function to reload album with new flicks
         func reloadAlbum() {
@@ -609,7 +609,6 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         case .insert:
             
             loadState = .inserting
-            print("inserting")
             cvBatchCompletionsArray.append {
                 self.collectionView.insertItems(at: [newIndexPath!])
             }
@@ -644,7 +643,6 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         switch loadState {
         case .inserting:
             loadState = .doneInserting
-            print("doneInserting")
         default:
             break
         }
