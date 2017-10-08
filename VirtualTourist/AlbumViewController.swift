@@ -50,6 +50,14 @@ class AlbumViewController: UIViewController {
         case noFlicksFound  // album has no flicks at Pin location
     }
     
+    enum FRCProgressStates {
+        case reload
+        case inserting
+        case doneInserting
+    }
+    
+    var loadState: FRCProgressStates = .doneInserting
+    
     // track view mode. Initialize in preDownloading mode
     var mode: AlbumViewingMode = .preDownloading
     
@@ -76,6 +84,9 @@ class AlbumViewController: UIViewController {
     // used to track cells/flicks to be deleted when trash bbi pressed
     var selectedCellsIndexPaths = [IndexPath]()
 
+    var loadedIndexPaths = [IndexPath]()
+    var insertCount: Int = 0
+    
     // store completions for batch updates in collectionView
     var cvBatchCompletionsArray = [()->Void]()
     
@@ -221,9 +232,10 @@ class AlbumViewController: UIViewController {
         else {
             // not editing. Set mode to normal and clear selectedCells
             mode = .normal
-            selectedCellsIndexPaths.removeAll()
         }
         
+        selectedCellsIndexPaths.removeAll()
+
         // update bars, reload
         configureBars()
         collectionView.reloadData()
@@ -330,6 +342,11 @@ class AlbumViewController: UIViewController {
          Reload album with a new set of flicks (discard flicks currently in cv.
          Present an alert/proceed if flick count > 0
         */
+        
+        loadedIndexPaths.removeAll()
+        insertCount = 0
+        loadState = .reload
+        print("reload")
         
         // declare function to reload album with new flicks
         func reloadAlbum() {
@@ -464,20 +481,38 @@ extension AlbumViewController: UICollectionViewDataSource {
         if let imageData = flick.image {
             
             // valid imageData...place image in cell, hide activityIndicator
-            
             if let image = UIImage(data: imageData as Data) {
                 cell.imageView.image = image
-                cell.activityIndicator.isHidden = true
                 cell.activityIndicator.stopAnimating()
             }
         }
         else {
-         
-            // imageData not yet downloaded..place default image  and activityIndicator in cell
             
-            cell.imageView.image = UIImage(named: "DefaultCVCellImage")
-            cell.activityIndicator.isHidden = false
             cell.activityIndicator.startAnimating()
+            cell.imageView.image = UIImage(named: "DefaultCVCellImage")
+
+            if loadState == FRCProgressStates.doneInserting {
+                cell.imageView.transform = .identity
+            }
+            else {
+                cell.imageView.transform = CGAffineTransform(scaleX: 0.1, y: 0.1)
+                Timer.scheduledTimer(withTimeInterval: 0.1,
+                                     repeats: true) {
+                                        (timer) in
+                                        
+                                        if self.collectionView.indexPathsForVisibleItems.contains(indexPath) {
+                                            
+                                            let cell = collectionView.cellForItem(at: indexPath) as! PhotoCell
+                                            
+                                            timer.invalidate()
+                                            UIView.animate(withDuration: 0.5,
+                                                           animations: {
+                                                            
+                                                            cell.imageView.transform = .identity
+                                            })
+                                        }
+                }
+            }
         }
         return cell
     }
@@ -572,6 +607,9 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         
         switch type {
         case .insert:
+            
+            loadState = .inserting
+            print("inserting")
             cvBatchCompletionsArray.append {
                 self.collectionView.insertItems(at: [newIndexPath!])
             }
@@ -602,6 +640,14 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
                 op()
             }
         })
+        
+        switch loadState {
+        case .inserting:
+            loadState = .doneInserting
+            print("doneInserting")
+        default:
+            break
+        }
         
         if mode == .downloading {
             
