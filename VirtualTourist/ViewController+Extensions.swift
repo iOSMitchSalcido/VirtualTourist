@@ -279,17 +279,35 @@ extension UIViewController {
         privateContext.parent = stack.context
         privateContext.perform {
             
-            // retrieve pin
-            let pin = privateContext.object(with: pin.objectID) as! Pin
+            /*
+             171008 bug fix
+             Intermittent: On app launch, crash if Pin was deleted when download was in progress
+             Caused by reading flick that was deleted.
+             Update to test Pin/Flick before beginning download of image data
+            */
+            // verify good pin and flicks
+            guard let pin = privateContext.object(with: pin.objectID) as? Pin,
+                let flicks = pin.flicks else {
+                    return
+            }
             
-            // iterate thru flicks...
-            // flicks are orderedSet.. ordering was created when adding to Pin..
-            for flick in pin.flicks! {
+            // iterate
+            for flick in flicks {
                 
-                let url = URL(string: (flick as! Flick).urlString!)
-                if let imageData = NSData(contentsOf: url!) {
-                    (flick as! Flick).image = imageData
+                // verify good flick, urlString, URL before retrieving imageData
+                if let flick = flick as? Flick,
+                    let urlString = flick.urlString,
+                    let url = URL(string: urlString),
+                    let imageData = NSData(contentsOf: url) {
+                    
+                    // good imageData
+                    flick.image = imageData
                     let _ = stack.savePrivateContext(privateContext)
+                }
+                else {
+                    
+                    // bad..possible Pin deletion during downloading of flicks
+                    return
                 }
             }
             
