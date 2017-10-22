@@ -92,8 +92,14 @@ class AlbumViewController: UIViewController {
     // store completions for batch updates in collectionView
     var cvBatchCompletionsArray = [()->Void]()
     
+    deinit {
+        print("deinit AlbumVC")
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        print("viewDidLoad AlbumVC")
         
         // view title
         if let viewTitle = pin.title {
@@ -291,24 +297,30 @@ class AlbumViewController: UIViewController {
         privateContext.parent = stack.context
         privateContext.perform {
             
+            // 171022, ARC cleanup
+            [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            
             // iterate, delete flick from context
-            for indexPath in self.selectedCellsIndexPaths {
+            for indexPath in strongSelf.selectedCellsIndexPaths {
                 
                 // retireve flick, then bring into private context using objectID..delete
-                let flick = self.fetchedResultsController.object(at: indexPath)
+                let flick = strongSelf.fetchedResultsController.object(at: indexPath)
                 let privateFlick = privateContext.object(with: flick.objectID) as! Flick
                 privateContext.delete(privateFlick)
             }
             
             // clear out indexPaths from array
-            self.selectedCellsIndexPaths.removeAll()
+            strongSelf.selectedCellsIndexPaths.removeAll()
             
             // save
             do {
                 try privateContext.save()
-                self.stack.context.performAndWait {
+                strongSelf.stack.context.performAndWait {
                     do {
-                        try self.stack.context.save()
+                        try strongSelf.stack.context.save()
                     } catch {
                         print("error: \(error.localizedDescription)")
                     }
@@ -316,19 +328,19 @@ class AlbumViewController: UIViewController {
                 
                 // update scrollView to match collectionView flicks
                 DispatchQueue.main.async {
-                    self.configureImagePreviewScrollView()
+                    strongSelf.configureImagePreviewScrollView()
                 }
                 
                 // if no flicks, conclude editing
-                if (self.fetchedResultsController.fetchedObjects?.isEmpty)! {
+                if (strongSelf.fetchedResultsController.fetchedObjects?.isEmpty)! {
                     DispatchQueue.main.async {
-                        self.setEditing(false, animated: true)
+                        strongSelf.setEditing(false, animated: true)
                     }
                 }
                 else {
                     // nothing selected, disable trash
                     DispatchQueue.main.async {
-                        self.trashBbi.isEnabled = false
+                        strongSelf.trashBbi.isEnabled = false
                     }
                 }
             } catch {
@@ -364,14 +376,19 @@ class AlbumViewController: UIViewController {
             
             presentProceedCancelAlert(title: "Load new album",
                                       message: "Delete all flicks and replace with newly downloaded album ?") {
-                                        (UIAlertAction) in
+                                        [weak self] (UIAlertAction) in
+                                        
+                                        // 171022, ARC
+                                        guard let strongSelf = self else {
+                                            return
+                                        }
                                         
                                         // delete flicks on private queue
                                         let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-                                        privateContext.parent = self.stack.context
+                                        privateContext.parent = strongSelf.stack.context
                                         privateContext.perform {
                                             
-                                            let pin = privateContext.object(with: self.pin.objectID) as! Pin
+                                            let pin = privateContext.object(with: strongSelf.pin.objectID) as! Pin
                                             let flicks = pin.flicks
 
                                             // delete all flicks
@@ -383,9 +400,9 @@ class AlbumViewController: UIViewController {
                                             do {
                                                 try privateContext.save()
                                                 
-                                                self.stack.context.performAndWait {
+                                                strongSelf.stack.context.performAndWait {
                                                     do {
-                                                        try self.stack.context.save()
+                                                        try strongSelf.stack.context.save()
                                                     } catch let error {
                                                         print("error: \(error.localizedDescription)")
                                                         return
@@ -498,9 +515,14 @@ extension AlbumViewController: UICollectionViewDataSource {
                 cell.imageView.transform = CGAffineTransform(scaleX: 0.1, y: 0.1)
                 Timer.scheduledTimer(withTimeInterval: 0.1,
                                      repeats: true) {
-                                        (timer) in
+                                        [weak self] (timer) in
                                         
-                                        if self.collectionView.indexPathsForVisibleItems.contains(indexPath) {
+                                        // 171022, ARC cleanup
+                                        guard let strongSelf = self else {
+                                            return
+                                        }
+                                        
+                                        if strongSelf.collectionView.indexPathsForVisibleItems.contains(indexPath) {
                                             
                                             let cell = collectionView.cellForItem(at: indexPath) as! PhotoCell
                                             
@@ -610,15 +632,30 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
             
             loadState = .inserting
             cvBatchCompletionsArray.append {
-                self.collectionView.insertItems(at: [newIndexPath!])
+                // 171022, ARC cleanup
+                [weak self] in
+                guard let strongSelf = self else {
+                    return
+                }
+                strongSelf.collectionView.insertItems(at: [newIndexPath!])
             }
         case .delete:
             cvBatchCompletionsArray.append {
-                self.collectionView.deleteItems(at: [indexPath!])
+                // 171022, ARC cleanup
+                [weak self] in
+                guard let strongSelf = self else {
+                    return
+                }
+                strongSelf.collectionView.deleteItems(at: [indexPath!])
             }
         case .update:
             cvBatchCompletionsArray.append {
-                self.collectionView.reloadItems(at: [indexPath!])
+                // 171022, ARC cleanup
+                [weak self] in
+                guard let strongSelf = self else {
+                    return
+                }
+                strongSelf.collectionView.reloadItems(at: [indexPath!])
             }
         default:
             break
@@ -635,7 +672,12 @@ extension AlbumViewController: NSFetchedResultsControllerDelegate {
         // fire batch updates
         collectionView.performBatchUpdates({
             
-            for op in self.cvBatchCompletionsArray {
+            // 171022, ARC cleanup
+            [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            for op in strongSelf.cvBatchCompletionsArray {
                 op()
             }
         })
