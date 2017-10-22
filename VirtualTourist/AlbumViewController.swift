@@ -92,15 +92,9 @@ class AlbumViewController: UIViewController {
     // store completions for batch updates in collectionView
     var cvBatchCompletionsArray = [()->Void]()
     
-    deinit {
-        print("deinit AlbumVC")
-    }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        print("viewDidLoad AlbumVC")
-        
+
         // view title
         if let viewTitle = pin.title {
             title = viewTitle
