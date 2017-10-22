@@ -300,11 +300,17 @@ extension MapViewController: MKMapViewDelegate {
             privateContext.parent = self.stack.context
             privateContext.perform {
                 
+                // 171022, ARC cleanup
+                [weak self] in
+                guard let strongSelf = self else {
+                    return
+                }
+                
                 let privatePin = privateContext.object(with: pin.objectID) as! Pin
                 privateContext.delete(privatePin)
                 
                 // save
-                let _ = self.stack.savePrivateContext(privateContext)
+                let _ = strongSelf.stack.savePrivateContext(privateContext)
             }
         }
         // right accessory. Navigate to AlbumVC
@@ -388,7 +394,11 @@ extension MapViewController {
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         let geoCoder = CLGeocoder()
         geoCoder.reverseGeocodeLocation(location) {
-            (placemarks, error) in
+            [weak self] (placemarks, error) in
+            
+            guard let strongSelf = self else {
+                return
+            }
             
             // test for geocode errors...look at most pertinent errors
             if let error = error as? CLError.Code {
@@ -396,23 +406,23 @@ extension MapViewController {
                 // error...present in alert with message and  remove annot pin from map
                 switch error {
                 case .locationUnknown:
-                    self.presentAlertForLocalizedError(LocationError.location("Unknown location."))
+                    strongSelf.presentAlertForLocalizedError(LocationError.location("Unknown location."))
                 case .network:
-                    self.presentAlertForLocalizedError(LocationError.status("Location network unavailable."))
+                    strongSelf.presentAlertForLocalizedError(LocationError.status("Location network unavailable."))
                 case .geocodeFoundNoResult:
-                    self.presentAlertForLocalizedError(LocationError.location("Geocode yielded no result."))
+                    strongSelf.presentAlertForLocalizedError(LocationError.location("Geocode yielded no result."))
                 default:
-                    self.presentAlertForLocalizedError(LocationError.status("Unknown geocoding error."))
+                    strongSelf.presentAlertForLocalizedError(LocationError.status("Unknown geocoding error."))
                 }
                 
                 // remove annotation...unusable location
-                self.mapView.removeAnnotation(annotation)
+                strongSelf.mapView.removeAnnotation(annotation)
                 
                 return
             }
             
             // set default location title, then test for valid placemark data for use as title
-            var locationTitle = self.defaultLocationTitle
+            var locationTitle = strongSelf.defaultLocationTitle
             if let placemark = placemarks?.first {
              
                 if let locality = placemark.locality {
@@ -431,7 +441,7 @@ extension MapViewController {
             
             // perform pin creation on private queue/context
             let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-            privateContext.parent = self.stack.context
+            privateContext.parent = strongSelf.stack.context
             privateContext.perform {
                 
                 // create coordinate MO
@@ -445,22 +455,22 @@ extension MapViewController {
                 pin.title = locationTitle
                 
                 // test for good save
-                if !self.stack.savePrivateContext(privateContext) {
+                if !strongSelf.stack.savePrivateContext(privateContext) {
                     
                     // bad save, remove annotation and show alert
                     DispatchQueue.main.async {
-                        self.mapView.removeAnnotation(annotation)
-                        self.presentAlertForLocalizedError(CoreDataError.save("Error saving new Pin."))
+                        strongSelf.mapView.removeAnnotation(annotation)
+                        strongSelf.presentAlertForLocalizedError(CoreDataError.save("Error saving new Pin."))
                     }
                 }
                 else {
                     
                     // good save. Proceed to assign pin to annotaions, begin album download
                     DispatchQueue.main.async {
-                        let pin = self.stack.context.object(with: pin.objectID) as! Pin
+                        let pin = strongSelf.stack.context.object(with: pin.objectID) as! Pin
                         annotation.title = locationTitle
                         annotation.pin = pin;
-                        self.downloadAlbumForPin(pin, stack: self.stack)
+                        strongSelf.downloadAlbumForPin(pin, stack: strongSelf.stack)
                     }
                 }
             }

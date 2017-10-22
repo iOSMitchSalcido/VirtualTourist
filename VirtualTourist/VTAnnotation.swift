@@ -17,5 +17,6 @@ import MapKit
 class VTAnnotation: MKPointAnnotation {
     
     // ref to pin...need ref for deleting pinView
-    var pin: Pin?
+    // 171022, ARC cleanup
+    weak var pin: Pin?
 }
