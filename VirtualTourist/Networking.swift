@@ -65,7 +65,7 @@ struct Networking {
             // convert data to json
             var jsonData: [String: AnyObject]!
             do {
-                jsonData = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as! [String:AnyObject]
+                jsonData = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? [String:AnyObject]
             } catch {
                 completion(nil, NetworkingError.data("Unable to convert returned network data to usable JSON format."))
                 return

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13196" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="rLS-3t-wNe">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="14460.31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="rLS-3t-wNe">
     <device id="retina4_0" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13173"/>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14460.20"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -201,10 +202,24 @@
                             </collectionView>
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" pagingEnabled="YES" translatesAutoresizingMaskIntoConstraints="NO" id="dEm-XI-Z3t">
                                 <rect key="frame" x="35" y="159" width="250" height="250"/>
+                                <subviews>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Zwy-yB-vIq">
+                                        <rect key="frame" x="0.0" y="0.0" width="250" height="250"/>
+                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="250" id="LdG-y6-yNS"/>
+                                            <constraint firstAttribute="width" constant="250" id="WuV-WR-Wdj"/>
+                                        </constraints>
+                                    </view>
+                                </subviews>
                                 <color key="backgroundColor" red="0.50196081400000003" green="0.50196081400000003" blue="0.50196081400000003" alpha="1" colorSpace="calibratedRGB"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="250" id="8kP-77-tga"/>
-                                    <constraint firstAttribute="width" constant="250" id="ZvU-AZ-J1Q"/>
+                                    <constraint firstAttribute="width" constant="250" id="7qf-dL-uLm"/>
+                                    <constraint firstItem="Zwy-yB-vIq" firstAttribute="leading" secondItem="dEm-XI-Z3t" secondAttribute="leading" id="JcC-4Z-QBW"/>
+                                    <constraint firstAttribute="bottom" secondItem="Zwy-yB-vIq" secondAttribute="bottom" id="Ukx-jE-83F"/>
+                                    <constraint firstAttribute="height" constant="250" id="fkf-kI-Lv5"/>
+                                    <constraint firstItem="Zwy-yB-vIq" firstAttribute="top" secondItem="dEm-XI-Z3t" secondAttribute="top" id="tpp-90-FsK"/>
+                                    <constraint firstAttribute="trailing" secondItem="Zwy-yB-vIq" secondAttribute="trailing" id="xhn-kA-b9v"/>
                                 </constraints>
                             </scrollView>
                             <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="kwd-j7-laH">
@@ -218,18 +233,18 @@
                         <color key="backgroundColor" red="0.90196079019999997" green="0.90196079019999997" blue="0.90196079019999997" alpha="1" colorSpace="calibratedRGB"/>
                         <gestureRecognizers/>
                         <constraints>
-                            <constraint firstItem="dEm-XI-Z3t" firstAttribute="centerX" secondItem="SFi-0c-b8y" secondAttribute="centerX" id="Anr-ac-wim"/>
+                            <constraint firstItem="dEm-XI-Z3t" firstAttribute="centerY" secondItem="SFi-0c-b8y" secondAttribute="centerY" id="6dq-fB-jEp"/>
                             <constraint firstItem="AGN-pQ-DmZ" firstAttribute="top" secondItem="U64-XZ-710" secondAttribute="bottom" constant="-64" id="BNQ-Kp-Die"/>
                             <constraint firstItem="DB7-0j-Bqm" firstAttribute="top" secondItem="U64-XZ-710" secondAttribute="bottom" id="FZ9-xH-eme"/>
                             <constraint firstAttribute="trailing" secondItem="DB7-0j-Bqm" secondAttribute="trailing" id="GiO-MV-KOv"/>
                             <constraint firstItem="feD-ZP-GDP" firstAttribute="top" secondItem="AGN-pQ-DmZ" secondAttribute="bottom" id="HNS-ka-jdQ"/>
-                            <constraint firstItem="kwd-j7-laH" firstAttribute="centerX" secondItem="SFi-0c-b8y" secondAttribute="centerX" id="OZr-JY-JPc"/>
                             <constraint firstAttribute="trailing" secondItem="AGN-pQ-DmZ" secondAttribute="trailing" id="Z2x-ad-13F"/>
                             <constraint firstItem="DB7-0j-Bqm" firstAttribute="leading" secondItem="SFi-0c-b8y" secondAttribute="leading" id="aza-fC-5yE"/>
-                            <constraint firstItem="kwd-j7-laH" firstAttribute="centerY" secondItem="SFi-0c-b8y" secondAttribute="centerY" id="bXw-Ow-92v"/>
+                            <constraint firstItem="kwd-j7-laH" firstAttribute="centerX" secondItem="SFi-0c-b8y" secondAttribute="centerX" id="bqK-V7-DHR"/>
                             <constraint firstItem="AGN-pQ-DmZ" firstAttribute="leading" secondItem="SFi-0c-b8y" secondAttribute="leading" id="ftm-vt-QfO"/>
                             <constraint firstItem="feD-ZP-GDP" firstAttribute="top" secondItem="DB7-0j-Bqm" secondAttribute="bottom" id="icU-aT-O9g"/>
-                            <constraint firstItem="dEm-XI-Z3t" firstAttribute="centerY" secondItem="SFi-0c-b8y" secondAttribute="centerY" id="vvv-KF-kXh"/>
+                            <constraint firstItem="dEm-XI-Z3t" firstAttribute="centerX" secondItem="SFi-0c-b8y" secondAttribute="centerX" id="jP3-PN-YEm"/>
+                            <constraint firstItem="kwd-j7-laH" firstAttribute="centerY" secondItem="SFi-0c-b8y" secondAttribute="centerY" id="ozd-uP-mfC"/>
                         </constraints>
                     </view>
                     <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" prompted="NO"/>
